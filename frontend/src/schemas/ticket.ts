@@ -1,0 +1,54 @@
+import { z } from 'zod';
+
+/**
+ * Enum kategori tiket yang valid.
+ * Sesuai dengan enum TicketCategory di Prisma schema.
+ */
+export const ticketCategoryEnum = z.enum(
+  ['HARDWARE', 'SOFTWARE', 'JARINGAN', 'EMAIL', 'WEBSITE', 'LAINNYA'],
+  {
+    errorMap: () => ({
+      message:
+        'Kategori harus salah satu dari: HARDWARE, SOFTWARE, JARINGAN, EMAIL, WEBSITE, LAINNYA',
+    }),
+  }
+);
+
+/**
+ * Schema validasi untuk pembuatan tiket baru.
+ * - judul: 1-150 karakter, wajib
+ * - deskripsi: 1-2000 karakter, wajib
+ * - kategori: salah satu dari enum TicketCategory, wajib
+ * - lokasi: 1-200 karakter, wajib
+ */
+export const createTicketSchema = z.object({
+  judul: z
+    .string({ required_error: 'Judul tiket wajib diisi' })
+    .min(1, { message: 'Judul tiket tidak boleh kosong' })
+    .max(150, { message: 'Judul tiket tidak boleh lebih dari 150 karakter' }),
+  deskripsi: z
+    .string({ required_error: 'Deskripsi tiket wajib diisi' })
+    .min(1, { message: 'Deskripsi tiket tidak boleh kosong' })
+    .max(2000, { message: 'Deskripsi tiket tidak boleh lebih dari 2000 karakter' }),
+  kategori: ticketCategoryEnum,
+  lokasi: z
+    .string({ required_error: 'Lokasi wajib diisi' })
+    .min(1, { message: 'Lokasi tidak boleh kosong' })
+    .max(200, { message: 'Lokasi tidak boleh lebih dari 200 karakter' }),
+});
+
+/**
+ * Schema validasi untuk pembatalan tiket.
+ * - alasanBatal: 1-500 karakter, opsional (jika diisi harus 1-500 karakter)
+ */
+export const cancelTicketSchema = z.object({
+  alasanBatal: z
+    .string()
+    .min(1, { message: 'Alasan pembatalan tidak boleh kosong jika diisi' })
+    .max(500, { message: 'Alasan pembatalan tidak boleh lebih dari 500 karakter' })
+    .optional(),
+});
+
+// Inferred types for form usage with React Hook Form
+export type CreateTicketFormData = z.infer<typeof createTicketSchema>;
+export type CancelTicketFormData = z.infer<typeof cancelTicketSchema>;

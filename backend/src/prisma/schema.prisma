@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SATKER
+  BIDTEKKOM
+  PADAL
+  TEKNISI
+}
+
+enum TicketStatus {
+  PENDING
+  PROSES
+  SELESAI
+  DIBATALKAN
+}
+
+enum TicketCategory {
+  HARDWARE
+  SOFTWARE
+  JARINGAN
+  EMAIL
+  WEBSITE
+  LAINNYA
+}
+
+enum AuditEventType {
+  LOGIN
+  REGISTRATION
+  TICKET_CREATION
+  TICKET_ASSIGNMENT
+  TICKET_COMPLETION
+  TICKET_CANCELLATION
+  TICKET_RATING
+  USER_SOFT_DELETE
+  ROLE_CHANGE
+  PASSWORD_RESET
+  PASSWORD_CHANGE
+  SETTINGS_CHANGE
+  TEAM_ASSIGNMENT
+  TEAM_REMOVAL
+}
+
+enum NotificationType {
+  TICKET_CREATED
+  TICKET_ASSIGNED
+  TICKET_COMPLETED
+  TICKET_CANCELLED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  nama          String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  nomorWhatsApp String    @db.VarChar(15)
+  role          Role      @default(SATKER)
+  divisi        String?   @db.VarChar(100)
+  foto          String?   @db.VarChar(500)
+  tema          String    @default("light") @db.VarChar(10)
+  bahasa        String    @default("id") @db.VarChar(5)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  ticketsCreated   Ticket[]       @relation("TicketCreator")
+  ticketsAssigned  Ticket[]       @relation("TicketAssignee")
+  ratings          Rating[]
+  notifications    Notification[]
+  auditLogsAsActor AuditLog[]     @relation("AuditActor")
+
+  // Padal-Teknisi team relation
+  padalId     String?
+  padal       User?   @relation("PadalTeam", fields: [padalId], references: [id])
+  teamMembers User[]  @relation("PadalTeam")
+
+  // Password reset
+  passwordResetToken   String?   @db.VarChar(255)
+  passwordResetExpires DateTime?
+
+  @@index([email])
+  @@index([role])
+  @@index([padalId])
+  @@index([deletedAt])
+}
+
+model Ticket {
+  id           String         @id @default(uuid())
+  nomorTiket   String         @unique @db.VarChar(20)
+  judul        String         @db.VarChar(150)
+  deskripsi    String         @db.Text
+  kategori     TicketCategory
+  lokasi       String         @db.VarChar(200)
+  status       TicketStatus   @default(PENDING)
+  divisiSatker String?        @db.VarChar(100)
+
+  // Timestamps
+  tanggalBuat    DateTime  @default(now())
+  tanggalAssign  DateTime?
+  tanggalSelesai DateTime?
+
+  // Cancellation
+  alasanBatal String? @db.VarChar(500)
+
+  // Relations
+  creatorId   String
+  creator     User         @relation("TicketCreator", fields: [creatorId], references: [id])
+  padalId     String?
+  padal       User?        @relation("TicketAssignee", fields: [padalId], references: [id])
+  attachments Attachment[]
+  rating      Rating?
+
+  @@index([creatorId])
+  @@index([padalId])
+  @@index([status])
+  @@index([tanggalBuat])
+  @@index([nomorTiket])
+}
+
+model TicketSequence {
+  id   String @id @default(uuid())
+  year Int    @unique
+  seq  Int    @default(0)
+
+  @@index([year])
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+  originalName String   @db.VarChar(255)
+  storedName   String   @db.VarChar(255)
+  mimeType     String   @db.VarChar(100)
+  size         Int
+  createdAt    DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  ticketId  String   @unique
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  bintang   Int // 1-5
+  feedback  String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model Notification {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  type         NotificationType
+  ticketNumber String           @db.VarChar(20)
+  message      String           @db.VarChar(500)
+  isRead       Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id             String         @id @default(uuid())
+  eventType      AuditEventType
+  actorId        String
+  actor          User           @relation("AuditActor", fields: [actorId], references: [id])
+  actorNama      String         @db.VarChar(100)
+  targetEntityId String?        @db.VarChar(255)
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+
+  @@index([actorId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([targetEntityId])
+}
+
+model SystemSettings {
+  id      String  @id @default(uuid())
+  appName String  @default("PoldaHelp Kalsel") @db.VarChar(100)
+  appLogo String? @db.VarChar(500)
+}
