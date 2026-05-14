@@ -117,7 +117,7 @@ export async function create(
     const attachmentData = files.map((file) => ({
       ticketId: ticket.id,
       originalName: file.originalname,
-      storedName: file.filename || generateUniqueFilename(file.originalname),
+      storedName: file.path || file.filename || generateUniqueFilename(file.originalname),
       mimeType: file.mimetype,
       size: file.size,
     }));

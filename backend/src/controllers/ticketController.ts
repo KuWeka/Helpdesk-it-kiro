@@ -212,6 +212,11 @@ export async function downloadAttachment(
       throw new AppError(404, 'ATTACHMENT_NOT_FOUND', 'Lampiran tidak ditemukan');
     }
 
+    if (attachment.storedName.startsWith('http')) {
+      res.redirect(attachment.storedName);
+      return;
+    }
+
     // Construct file path
     const filePath = path.join(
       __dirname,

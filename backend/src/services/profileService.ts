@@ -1,6 +1,4 @@
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import * as auditService from './auditService';
@@ -122,14 +120,9 @@ export async function updateProfile(
 
   // Handle photo upload
   if (photo) {
-    // Delete old photo from disk if exists
-    if (user.foto) {
-      const oldPhotoPath = path.join(__dirname, '..', '..', 'uploads', 'photos', user.foto);
-      if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
-      }
-    }
-    updateData.foto = photo.filename;
+    // Note: To delete the old photo from Cloudinary, you would need its public_id
+    // For now, we just update the database with the new URL.
+    updateData.foto = photo.path || photo.filename;
   }
 
   // Only update if there's something to update

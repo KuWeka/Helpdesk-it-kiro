@@ -64,7 +64,7 @@ export async function uploadLogoHandler(req: Request, res: Response, next: NextF
       throw new AppError(400, 'VALIDATION_ERROR', 'File logo diperlukan');
     }
 
-    const logoPath = req.file.filename;
+    const logoPath = req.file.path || req.file.filename;
 
     const settings = await settingsService.updateLogo(
       logoPath,
@@ -91,6 +91,11 @@ export async function getLogoHandler(_req: Request, res: Response, next: NextFun
 
     if (!settings.appLogo) {
       throw new AppError(404, 'NOT_FOUND', 'Logo belum diatur');
+    }
+
+    if (settings.appLogo.startsWith('http')) {
+      res.redirect(settings.appLogo);
+      return;
     }
 
     const logoPath = path.join(__dirname, '..', '..', 'uploads', 'logos', settings.appLogo);

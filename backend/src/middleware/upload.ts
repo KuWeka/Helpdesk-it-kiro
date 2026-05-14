@@ -1,20 +1,17 @@
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
-import { generateUniqueFilename } from '../utils/fileNaming';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import dotenv from 'dotenv';
 
-// Upload directories
-const UPLOAD_BASE = path.join(__dirname, '..', '..', 'uploads');
-const UPLOAD_TICKETS = path.join(UPLOAD_BASE, 'tickets');
-const UPLOAD_PHOTOS = path.join(UPLOAD_BASE, 'photos');
-const UPLOAD_LOGOS = path.join(UPLOAD_BASE, 'logos');
+dotenv.config();
 
-// Ensure upload directories exist
-[UPLOAD_TICKETS, UPLOAD_PHOTOS, UPLOAD_LOGOS].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Maximum file size: 5MB
@@ -40,16 +37,20 @@ function createFileFilter(allowedExtensions: string[]) {
 }
 
 /**
- * Creates multer disk storage with a specific destination directory and UUID-based filenames.
+ * Creates Cloudinary storage with a specific destination folder.
  */
-function createStorage(destination: string) {
-  return multer.diskStorage({
-    destination: (_req, _file, cb) => {
-      cb(null, destination);
-    },
-    filename: (_req, file, cb) => {
-      const uniqueName = generateUniqueFilename(file.originalname);
-      cb(null, uniqueName);
+function createCloudinaryStorage(folderName: string) {
+  return new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (_req: Request, _file: Express.Multer.File) => {
+      // Use raw resource_type for tickets so we can upload pdf, docx, etc.
+      // Use auto or image for photos/logos
+      const resourceType = folderName === 'tickets' ? 'auto' : 'image';
+      
+      return {
+        folder: `poldahelp/${folderName}`,
+        resource_type: resourceType,
+      };
     },
   });
 }
@@ -61,7 +62,7 @@ function createStorage(destination: string) {
  * - Max 10 files per request
  */
 export const ticketAttachment = multer({
-  storage: createStorage(UPLOAD_TICKETS),
+  storage: createCloudinaryStorage('tickets'),
   limits: {
     fileSize: MAX_FILE_SIZE,
     files: 10,
@@ -76,7 +77,7 @@ export const ticketAttachment = multer({
  * - Single file only
  */
 export const profilePhoto = multer({
-  storage: createStorage(UPLOAD_PHOTOS),
+  storage: createCloudinaryStorage('photos'),
   limits: {
     fileSize: MAX_FILE_SIZE,
     files: 1,
@@ -91,7 +92,7 @@ export const profilePhoto = multer({
  * - Single file only
  */
 export const systemLogo = multer({
-  storage: createStorage(UPLOAD_LOGOS),
+  storage: createCloudinaryStorage('logos'),
   limits: {
     fileSize: MAX_FILE_SIZE,
     files: 1,

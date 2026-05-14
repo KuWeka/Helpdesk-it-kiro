@@ -105,6 +105,11 @@ export async function getPhotoHandler(req: Request, res: Response, next: NextFun
       throw new AppError(404, 'NOT_FOUND', 'Foto profil belum diatur');
     }
 
+    if (profile.foto.startsWith('http')) {
+      res.redirect(profile.foto);
+      return;
+    }
+
     const photoPath = path.join(__dirname, '..', '..', 'uploads', 'photos', profile.foto);
 
     if (!fs.existsSync(photoPath)) {
