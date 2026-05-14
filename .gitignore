@@ -29,6 +29,7 @@ npm-debug.log*
 
 # Dupe components (redesign workspace)
 dupe components/
+dupe component/
 
 # Documents (local notes)
 documents/
