@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
+import { Shield } from 'lucide-react';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -13,36 +13,50 @@ export default function AuthLayout({
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4 py-8">
-          <div className="w-full max-w-md">
-            {/* App Logo and Name */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-8 w-8 text-primary"
-                >
-                  <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-                </svg>
+        <div className="flex min-h-screen">
+          {/* Left branding panel — hidden on mobile, visible on desktop */}
+          <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-[#0f172a] relative overflow-hidden">
+            {/* Decorative dot grid background */}
+            <div
+              className="absolute inset-0 opacity-5"
+              style={{
+                backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }}
+            />
+            <div className="relative z-10 flex flex-col items-center gap-6 text-center px-12">
+              <div className="flex size-16 items-center justify-center rounded-2xl bg-teal-600">
+                <Shield className="size-9 text-white" />
               </div>
-              <h1 className="text-xl font-semibold text-foreground">
-                PoldaHelp Kalsel
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sistem Helpdesk IT Internal
+              <div className="flex flex-col gap-2">
+                <h1 className="text-4xl font-bold text-white tracking-tight">SIGAP</h1>
+                <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
+                  Sistem Informasi Gangguan dan Aduan Polri — Polda Kalimantan Selatan
+                </p>
+              </div>
+              <div className="mt-4 flex flex-col items-center gap-1">
+                <div className="h-px w-24 bg-teal-600/40" />
+                <p className="text-xs text-slate-500 mt-2">Bidang Teknologi dan Komunikasi</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right form panel */}
+          <div className="flex w-full lg:w-1/2 flex-col items-center justify-center min-h-screen bg-white dark:bg-[#111827] px-6 py-12">
+            {/* Mobile-only logo */}
+            <div className="flex flex-col items-center mb-8 lg:hidden">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-teal-600 mb-3">
+                <Shield className="size-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">SIGAP</h1>
+              <p className="text-xs text-slate-500 mt-1 text-center max-w-xs">
+                Sistem Informasi Gangguan dan Aduan Polri
               </p>
             </div>
 
-            {/* Card Container for Auth Forms */}
-            <Card className="p-6">
+            <div className="w-full max-w-sm">
               {children}
-            </Card>
+            </div>
           </div>
         </div>
         <Toaster />

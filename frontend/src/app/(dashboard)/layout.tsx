@@ -55,12 +55,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex h-screen">
-        {/* Sidebar skeleton (desktop) */}
-        <div className="hidden lg:flex w-64 flex-col border-r bg-card p-4 gap-4">
-          <Skeleton className="h-8 w-32" />
-          <div className="space-y-2 mt-4">
+        {/* Sidebar skeleton (desktop) — dark bg to match real sidebar */}
+        <div className="hidden lg:flex w-64 flex-shrink-0 flex-col bg-[#0f172a] border-r border-[#1e293b] p-4 gap-4">
+          <Skeleton className="h-8 w-32 bg-white/10" />
+          <div className="flex flex-col gap-2 mt-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full" />
+              <Skeleton key={i} className="h-9 w-full bg-white/10" />
             ))}
           </div>
         </div>
@@ -95,7 +95,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block flex-shrink-0">
         <Sidebar
           role={user.role}
           currentPath={currentPath}
@@ -119,7 +119,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       />
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-background">
         {/* Header (visible on mobile, shows hamburger; on desktop shows user menu) */}
         <Header
           onMenuToggle={() => setDrawerOpen(true)}

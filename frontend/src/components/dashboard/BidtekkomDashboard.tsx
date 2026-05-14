@@ -22,7 +22,6 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -35,6 +34,7 @@ import {
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { dashboardApi } from "@/lib/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -74,13 +74,6 @@ const MONTH_LABELS = [
   "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  PROSES: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  SELESAI: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  DIBATALKAN: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-};
-
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString("id-ID", {
@@ -88,14 +81,6 @@ function formatDate(dateStr: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <Badge className={STATUS_COLORS[status] || "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300"}>
-      {status}
-    </Badge>
-  );
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -198,12 +183,12 @@ export function BidtekkomDashboard() {
     );
   }
 
-  // Prepare chart data
+  // Prepare chart data — teal-based palette
   const barChartData = [
     { name: "PENDING", value: data.counts.PENDING, fill: "#f59e0b" },
-    { name: "PROSES", value: data.counts.PROSES, fill: "#3b82f6" },
-    { name: "SELESAI", value: data.counts.SELESAI, fill: "#22c55e" },
-    { name: "DIBATALKAN", value: data.counts.DIBATALKAN, fill: "#ef4444" },
+    { name: "PROSES", value: data.counts.PROSES, fill: "#0d9488" },
+    { name: "SELESAI", value: data.counts.SELESAI, fill: "#16a34a" },
+    { name: "DIBATALKAN", value: data.counts.DIBATALKAN, fill: "#dc2626" },
   ];
 
   const lineChartData = data.monthlyTrend.map((item) => ({
@@ -220,8 +205,8 @@ export function BidtekkomDashboard() {
     <div className="space-y-6">
       {/* Page Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard Bidtekkom</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Dashboard Bidtekkom</h1>
+        <p className="text-sm text-muted-foreground">
           Ringkasan aktivitas sistem helpdesk
         </p>
       </div>
@@ -265,7 +250,7 @@ export function BidtekkomDashboard() {
         {/* Bar Chart - Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Distribusi Tiket per Status</CardTitle>
+            <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">Distribusi Tiket per Status</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -303,7 +288,7 @@ export function BidtekkomDashboard() {
         {/* Line Chart - Monthly Trend */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
               Tren Pembuatan Tiket Bulanan ({new Date().getFullYear()})
             </CardTitle>
           </CardHeader>
@@ -336,9 +321,9 @@ export function BidtekkomDashboard() {
                   <Line
                     type="monotone"
                     dataKey="tiket"
-                    stroke="hsl(var(--primary))"
+                    stroke="#0d9488"
                     strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                    dot={{ fill: "#0d9488", r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
@@ -351,7 +336,7 @@ export function BidtekkomDashboard() {
       {/* Recent Tickets Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Tiket Terbaru</CardTitle>
+          <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">Tiket Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
           {data.recentTickets.length === 0 ? (
@@ -363,11 +348,11 @@ export function BidtekkomDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No. Tiket</TableHead>
-                    <TableHead>Judul</TableHead>
-                    <TableHead>Satker</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Tanggal Buat</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No. Tiket</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Satker</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tanggal Buat</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -398,8 +383,8 @@ export function BidtekkomDashboard() {
       {/* Unassigned Tickets Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+          <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <Clock className="size-5 text-amber-500 dark:text-amber-400" />
             Tiket Belum Di-assign
           </CardTitle>
         </CardHeader>
@@ -413,11 +398,11 @@ export function BidtekkomDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No. Tiket</TableHead>
-                    <TableHead>Judul</TableHead>
-                    <TableHead>Satker</TableHead>
-                    <TableHead>Tanggal Buat</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No. Tiket</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Satker</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tanggal Buat</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -440,7 +425,7 @@ export function BidtekkomDashboard() {
                           className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
                           onClick={() => handleQuickAssign(ticket)}
                         >
-                          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                          <UserPlus className="mr-1.5 size-3.5" />
                           Assign
                         </Button>
                       </TableCell>

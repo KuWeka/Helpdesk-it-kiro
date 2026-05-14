@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, Bell, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -14,6 +15,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/providers/AuthProvider';
+
+// ─── Page Title Mapping ──────────────────────────────────────────────────────
+
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/dashboard/tickets': 'Tiket',
+  '/dashboard/create-ticket': 'Buat Tiket',
+  '/dashboard/staff': 'Manajemen User',
+  '/dashboard/teams': 'Manajemen Tim',
+  '/dashboard/my-team': 'Tim Saya',
+  '/dashboard/reports': 'Laporan',
+  '/dashboard/audit-log': 'Audit Log',
+  '/dashboard/notifications': 'Notifikasi',
+  '/dashboard/settings': 'Pengaturan',
+  '/dashboard/system-settings': 'Pengaturan Sistem',
+};
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -44,11 +61,12 @@ function getInitials(nama: string): string {
 
 export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
   const { logout } = useAuth();
+  const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
-      {/* Left side: hamburger (mobile only) */}
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white dark:bg-[#111827] px-4 lg:px-6 shadow-sm backdrop-blur-sm">
+      {/* Left side: hamburger (mobile) + page title (desktop) */}
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -56,8 +74,11 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
           onClick={onMenuToggle}
           aria-label="Toggle menu"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="size-5" />
         </Button>
+        <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100 hidden lg:block">
+          {PAGE_TITLES[pathname] ?? 'Dashboard'}
+        </h1>
       </div>
 
       {/* Right side: notification bell + user dropdown */}
@@ -70,9 +91,9 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
           asChild
         >
           <Link href="/dashboard/notifications" aria-label="Notifications">
-            <Bell className="h-5 w-5" />
+            <Bell className="size-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+              <span className="absolute -top-0.5 -right-0.5 flex size-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -82,10 +103,10 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
         {/* User dropdown menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="User menu">
-              <Avatar className="h-9 w-9">
+            <Button variant="ghost" className="relative size-9 rounded-full" aria-label="User menu">
+              <Avatar className="size-9">
                 {user.foto && <AvatarImage src={user.foto} alt={user.nama} />}
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="bg-teal-600 text-white text-xs">
                   {getInitials(user.nama)}
                 </AvatarFallback>
               </Avatar>
@@ -93,7 +114,7 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium leading-none">{user.nama}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user.role}
@@ -103,13 +124,13 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer">
-                <User className="h-4 w-4" />
+                <User className="size-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/dashboard/settings?tab=preferences" className="flex items-center gap-2 cursor-pointer">
-                <Settings className="h-4 w-4" />
+                <Settings className="size-4" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
@@ -118,7 +139,7 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
               className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
               onClick={logout}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
               <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

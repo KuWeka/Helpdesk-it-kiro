@@ -27,5 +27,11 @@ uploads/*
 *.log
 npm-debug.log*
 
+# Dupe components (redesign workspace)
+dupe components/
+
+# Documents (local notes)
+documents/
+
 # Prisma
 backend/src/prisma/migrations/**/migration_lock.toml

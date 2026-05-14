@@ -167,7 +167,7 @@ export function PadalDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard Padal</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Dashboard Padal</h1>
 
       {/* Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -194,7 +194,7 @@ export function PadalDashboard() {
       {/* Active Tickets Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Tiket Aktif</CardTitle>
+          <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">Tiket Aktif</CardTitle>
         </CardHeader>
         <CardContent>
           {activeTickets.length === 0 ? (
@@ -208,12 +208,12 @@ export function PadalDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No. Tiket</TableHead>
-                    <TableHead>Judul</TableHead>
-                    <TableHead>Satker</TableHead>
-                    <TableHead>Lokasi</TableHead>
-                    <TableHead>Tgl Assign</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No. Tiket</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Satker</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Lokasi</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tgl Assign</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -261,8 +261,8 @@ export function PadalDashboard() {
       {/* Team Members Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-200">
+            <Users className="size-5" />
             Tim Teknisi
           </CardTitle>
         </CardHeader>

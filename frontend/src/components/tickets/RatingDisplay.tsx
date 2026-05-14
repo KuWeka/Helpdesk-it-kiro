@@ -34,10 +34,10 @@ function StarRating({ bintang }: { bintang: number }) {
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
-          className={`h-5 w-5 ${
+          className={`size-5 ${
             i < clampedRating
-              ? "fill-yellow-400 text-yellow-400"
-              : "fill-none text-gray-300 dark:text-gray-600"
+              ? 'fill-yellow-400 text-yellow-400'
+              : 'fill-none text-muted-foreground/40'
           }`}
         />
       ))}
@@ -52,7 +52,7 @@ export function RatingDisplay({ bintang, feedback, createdAt }: RatingDisplayPro
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">Rating & Feedback</CardTitle>
+        <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">Rating &amp; Feedback</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <StarRating bintang={bintang} />

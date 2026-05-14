@@ -16,7 +16,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { UnratedTicketsBanner } from "@/components/dashboard/UnratedTicketsBanner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,36 +45,6 @@ interface SatkerDashboardData {
     tanggalBuat: string;
   }[];
   unratedCount: number;
-}
-
-// ─── Status Badge Helper ────────────────────────────────────────────────────
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  PENDING: {
-    label: "Pending",
-    className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-  },
-  PROSES: {
-    label: "Proses",
-    className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  },
-  SELESAI: {
-    label: "Selesai",
-    className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800",
-  },
-  DIBATALKAN: {
-    label: "Dibatalkan",
-    className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800",
-  },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const config = statusConfig[status] || { label: status, className: "" };
-  return (
-    <Badge variant="outline" className={config.className}>
-      {config.label}
-    </Badge>
-  );
 }
 
 // ─── Date Formatter ─────────────────────────────────────────────────────────
@@ -149,7 +119,7 @@ function SatkerDashboard() {
         description="Anda belum membuat tiket bantuan IT. Buat tiket pertama Anda untuk mendapatkan bantuan."
         action={
           <Button onClick={() => router.push("/dashboard/create-ticket")}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Buat Tiket Baru
           </Button>
         }
@@ -193,7 +163,9 @@ function SatkerDashboard() {
       {/* Recent Tickets Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Tiket Terbaru</CardTitle>
+          <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
+            Tiket Terbaru
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {data.recentTickets.length === 0 ? (
@@ -205,17 +177,17 @@ function SatkerDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No. Tiket</TableHead>
-                    <TableHead>Judul</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Tanggal Buat</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No. Tiket</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tanggal Buat</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.recentTickets.map((ticket) => (
                     <TableRow
                       key={ticket.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() =>
                         router.push(`/dashboard/tickets/${ticket.id}`)
                       }
@@ -228,16 +200,16 @@ function SatkerDashboard() {
                         }
                       }}
                     >
-                      <TableCell className="font-mono text-sm">
+                      <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300">
                         {ticket.nomorTiket}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
+                      <TableCell className="max-w-[200px] truncate text-sm text-slate-700 dark:text-slate-300">
                         {ticket.judul}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={ticket.status} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground">
                         {formatDate(ticket.tanggalBuat)}
                       </TableCell>
                     </TableRow>
@@ -275,8 +247,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Dashboard
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Selamat datang, {user.nama}
         </p>
       </div>

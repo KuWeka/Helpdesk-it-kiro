@@ -102,9 +102,9 @@ export default function InlineRatingForm({
 
   if (isSubmitted) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800/50 dark:bg-green-950/30">
         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-          <CheckCircle2 className="h-5 w-5" />
+          <CheckCircle2 className="size-5 shrink-0" />
           <p className="text-sm font-medium">
             Rating berhasil dikirim. Terima kasih atas feedback Anda.
           </p>
@@ -118,7 +118,7 @@ export default function InlineRatingForm({
   return (
     <div className="rounded-lg border bg-card p-4 space-y-4">
       <div>
-        <h3 className="text-base font-semibold">Beri Rating</h3>
+        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">Beri Rating</h3>
         <p className="text-sm text-muted-foreground">
           Berikan penilaian Anda terhadap penyelesaian tiket ini.
         </p>
@@ -151,13 +151,13 @@ export default function InlineRatingForm({
                           aria-checked={field.value === star}
                           aria-label={`${star} bintang`}
                           disabled={isLoading}
-                          className="rounded-sm p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-sm p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => field.onChange(star)}
                           onMouseEnter={() => setHoveredStar(star)}
                           onMouseLeave={() => setHoveredStar(0)}
                         >
                           <Star
-                            className={`h-7 w-7 transition-colors ${
+                            className={`size-7 transition-colors ${
                               isFilled
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'fill-none text-muted-foreground hover:text-yellow-300'
@@ -204,7 +204,7 @@ export default function InlineRatingForm({
 
           {/* Submit Button */}
           <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
             Kirim Rating
           </Button>
         </form>

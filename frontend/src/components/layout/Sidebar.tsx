@@ -104,26 +104,26 @@ export function Sidebar({
   const menuItems = MENU_ITEMS[role] || [];
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r bg-card">
+    <aside className="flex h-full w-64 flex-shrink-0 flex-col bg-[#0f172a] border-r border-[#1e293b]">
       {/* App branding */}
-      <div className="flex h-16 items-center gap-3 border-b px-4">
+      <div className="flex h-16 items-center gap-3 border-b border-[#1e293b] px-4">
         {appLogo ? (
           <img
             src={appLogo}
             alt={appName}
-            className="h-8 w-8 rounded object-contain"
+            className="size-8 rounded object-contain"
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-            <Shield className="h-5 w-5 text-primary-foreground" />
+          <div className="flex size-8 items-center justify-center rounded-lg bg-teal-600">
+            <Shield className="size-5 text-white" />
           </div>
         )}
-        <span className="text-sm font-semibold truncate">{appName}</span>
+        <span className="text-sm font-semibold truncate text-white">SIGAP</span>
       </div>
 
       {/* Navigation menu */}
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Menu navigasi utama">
-        <ul className="space-y-1">
+        <ul className="flex flex-col gap-1">
           {menuItems.map((item) => {
             const active = isActive(currentPath, item.href);
             const Icon = item.icon;
@@ -133,17 +133,17 @@ export function Sidebar({
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a]",
                     active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "relative bg-white/10 text-white border-l-2 border-teal-500 pl-[10px]"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
                   )}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="size-4 shrink-0" />
                   <span className="truncate">{item.label}</span>
                   {item.showBadge && unreadCount > 0 && (
-                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                    <span className="ml-auto flex size-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
@@ -155,17 +155,17 @@ export function Sidebar({
       </nav>
 
       {/* User footer */}
-      <div className="border-t px-4 py-3">
+      <div className="border-t border-[#1e293b] px-4 py-3">
         <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
+          <Avatar className="size-9">
             {user.foto && <AvatarImage src={user.foto} alt={user.nama} />}
-            <AvatarFallback className="bg-muted text-sm font-medium">
+            <AvatarFallback className="bg-teal-600 text-white text-sm font-medium">
               {getInitials(user.nama)}
             </AvatarFallback>
           </Avatar>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium">{user.nama}</span>
-            <Badge variant="secondary" className="w-fit text-[10px] px-1.5 py-0">
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="truncate text-sm font-medium text-white">{user.nama}</span>
+            <Badge className="w-fit bg-teal-900 text-teal-300 border-teal-800 text-xs px-1.5 py-0 hover:bg-teal-900">
               {ROLE_LABELS[user.role]}
             </Badge>
           </div>

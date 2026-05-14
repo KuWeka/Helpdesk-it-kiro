@@ -8,9 +8,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["shared/*"],
@@ -20,10 +17,6 @@
       "@shared/constants/*": ["shared/constants/*"]
     }
   },
-  "references": [
-    { "path": "./frontend" },
-    { "path": "./backend" },
-    { "path": "./shared" }
-  ],
-  "exclude": ["node_modules"]
+  "include": ["shared/**/*"],
+  "exclude": ["node_modules", "frontend", "backend"]
 }

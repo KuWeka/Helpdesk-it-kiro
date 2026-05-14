@@ -134,11 +134,11 @@ export function TeknisiDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>No. Tiket</TableHead>
-                <TableHead>Judul</TableHead>
-                <TableHead className="hidden md:table-cell">Pelapor</TableHead>
-                <TableHead className="hidden md:table-cell">Lokasi</TableHead>
-                <TableHead className="hidden sm:table-cell">Tgl Assign</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No. Tiket</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Judul</TableHead>
+                <TableHead className="hidden md:table-cell text-xs font-semibold text-slate-500 uppercase tracking-wide">Pelapor</TableHead>
+                <TableHead className="hidden md:table-cell text-xs font-semibold text-slate-500 uppercase tracking-wide">Lokasi</TableHead>
+                <TableHead className="hidden sm:table-cell text-xs font-semibold text-slate-500 uppercase tracking-wide">Tgl Assign</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
