@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { SocketProvider, useSocket } from "@/providers/SocketProvider";
 import { ToastProvider } from "@/providers/ToastProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import { Header } from "@/components/layout/Header";
@@ -145,11 +146,13 @@ export default function DashboardLayout({
   return (
     <AuthProvider>
       <ThemeProvider>
-        <SocketProvider>
-          <ToastProvider>
-            <DashboardLayoutInner>{children}</DashboardLayoutInner>
-          </ToastProvider>
-        </SocketProvider>
+        <QueryProvider>
+          <SocketProvider>
+            <ToastProvider>
+              <DashboardLayoutInner>{children}</DashboardLayoutInner>
+            </ToastProvider>
+          </SocketProvider>
+        </QueryProvider>
       </ThemeProvider>
     </AuthProvider>
   );

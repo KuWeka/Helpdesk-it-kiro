@@ -21,7 +21,7 @@ import {
   Users,
   UsersRound,
   FileText,
-  ClipboardList,
+  Shield,
   Cog,
 } from "lucide-react";
 
@@ -115,7 +115,7 @@ function getMenuItems(role: Role, unreadCount?: number): MenuItem[] {
         {
           label: "Audit Log",
           href: "/dashboard/audit-log",
-          icon: <ClipboardList className="h-5 w-5" />,
+          icon: <Shield className="h-5 w-5" />,
         },
         notificationItem,
         {

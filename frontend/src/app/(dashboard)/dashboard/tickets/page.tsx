@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useReactTable,
@@ -9,14 +9,18 @@ import {
   type PaginationState,
   flexRender,
 } from "@tanstack/react-table";
-import { Ticket, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Ticket, Eye, ChevronLeft, ChevronRight, XCircle, UserPlus, CheckCircle2, Search } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { ticketApi, type PaginatedResult } from "@/lib/api";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
+import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
+import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -32,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,10 +46,14 @@ interface TicketRow {
   judul: string;
   status: string;
   tanggalBuat: string;
+  tanggalAssign?: string;
   kategori?: string;
   lokasi?: string;
+  divisiSatker?: string;
   creator?: { nama: string };
-  padal?: { nama: string } | null;
+  creatorId?: string;
+  padal?: { nama: string; id?: string } | null;
+  padalId?: string | null;
 }
 
 // ─── Date Formatter ─────────────────────────────────────────────────────────
@@ -56,61 +65,6 @@ function formatDate(dateStr: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-// ─── Column Definitions ─────────────────────────────────────────────────────
-
-function getColumns(onViewDetail: (id: string) => void): ColumnDef<TicketRow>[] {
-  return [
-    {
-      accessorKey: "nomorTiket",
-      header: "No. Tiket",
-      cell: ({ row }) => (
-        <span className="font-mono text-sm">{row.original.nomorTiket}</span>
-      ),
-    },
-    {
-      accessorKey: "judul",
-      header: "Judul",
-      cell: ({ row }) => (
-        <span className="max-w-[200px] truncate block">
-          {row.original.judul}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
-    },
-    {
-      accessorKey: "tanggalBuat",
-      header: "Tanggal Buat",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {formatDate(row.original.tanggalBuat)}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Aksi",
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewDetail(row.original.id);
-          }}
-        >
-          <Eye className="mr-1 h-4 w-4" />
-          Detail
-        </Button>
-      ),
-    },
-  ];
 }
 
 // ─── Status Filter Options ──────────────────────────────────────────────────
@@ -129,6 +83,7 @@ export default function TicketListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   // State
   const [data, setData] = useState<TicketRow[]>([]);
@@ -138,6 +93,7 @@ export default function TicketListPage() {
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") || "ALL"
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
@@ -148,56 +104,349 @@ export default function TicketListPage() {
   // Check for unrated query param (from UnratedTicketsBanner)
   const unratedFilter = searchParams.get("unrated") === "true";
 
+  // Cancel modal state
+  const [cancelModal, setCancelModal] = useState<{
+    open: boolean;
+    ticketId: string;
+    ticketNumber: string;
+  }>({ open: false, ticketId: "", ticketNumber: "" });
+
+  // Assign modal state
+  const [assignModal, setAssignModal] = useState<{
+    open: boolean;
+    ticketId: string;
+    ticketNumber: string;
+  }>({ open: false, ticketId: "", ticketNumber: "" });
+
+  // Complete (Selesai) modal state
+  const [completeModal, setCompleteModal] = useState<{
+    open: boolean;
+    ticketId: string;
+    ticketNumber: string;
+  }>({ open: false, ticketId: "", ticketNumber: "" });
+  const [isCompleting, setIsCompleting] = useState(false);
+
   // Fetch tickets
-  useEffect(() => {
-    async function fetchTickets() {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const fetchTickets = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const params: Record<string, string | number> = {
-          page: pagination.pageIndex + 1,
-          pageSize: pagination.pageSize,
-        };
+      const params: Record<string, string | number> = {
+        page: pagination.pageIndex + 1,
+        pageSize: pagination.pageSize,
+      };
 
-        if (statusFilter && statusFilter !== "ALL") {
-          params.status = statusFilter;
-        }
-
-        if (unratedFilter) {
-          params.unrated = "true";
-        }
-
-        const response = await ticketApi.list(params);
-        const resData = response.data;
-
-        // Handle response format: { status, data: [...], pagination: { totalItems } }
-        const tickets = Array.isArray(resData.data) ? resData.data : [];
-        const total = resData.pagination?.totalItems ?? tickets.length;
-
-        setData(tickets);
-        setTotalRows(total);
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Gagal memuat daftar tiket";
-        setError(message);
-      } finally {
-        setIsLoading(false);
+      if (statusFilter && statusFilter !== "ALL") {
+        params.status = statusFilter;
       }
-    }
 
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+
+      if (unratedFilter) {
+        params.unrated = "true";
+      }
+
+      const response = await ticketApi.list(params);
+      const resData = response.data;
+
+      // Handle response format: { status, data: [...], pagination: { totalItems } }
+      const tickets = Array.isArray(resData.data) ? resData.data : [];
+      const total = resData.pagination?.totalItems ?? tickets.length;
+
+      setData(tickets);
+      setTotalRows(total);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal memuat daftar tiket";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter]);
+
+  useEffect(() => {
     if (!authLoading && user) {
       fetchTickets();
     }
-  }, [pagination.pageIndex, pagination.pageSize, statusFilter, unratedFilter, authLoading, user]);
+  }, [authLoading, user, fetchTickets]);
 
   // Navigate to ticket detail
   const handleViewDetail = (id: string) => {
     router.push(`/dashboard/tickets/${id}`);
   };
 
-  // Column definitions
-  const columns = useMemo(() => getColumns(handleViewDetail), []);
+  // ─── Action Handlers ────────────────────────────────────────────────────────
+
+  const handleCancelClick = (ticket: TicketRow) => {
+    setCancelModal({ open: true, ticketId: ticket.id, ticketNumber: ticket.nomorTiket });
+  };
+
+  const handleAssignClick = (ticket: TicketRow) => {
+    setAssignModal({ open: true, ticketId: ticket.id, ticketNumber: ticket.nomorTiket });
+  };
+
+  const handleCompleteClick = (ticket: TicketRow) => {
+    setCompleteModal({ open: true, ticketId: ticket.id, ticketNumber: ticket.nomorTiket });
+  };
+
+  const handleConfirmComplete = async () => {
+    setIsCompleting(true);
+    try {
+      await ticketApi.complete(completeModal.ticketId);
+      toast({
+        title: "Berhasil",
+        description: `Tiket ${completeModal.ticketNumber} berhasil diselesaikan.`,
+      });
+      setCompleteModal({ open: false, ticketId: "", ticketNumber: "" });
+      fetchTickets();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Gagal menyelesaikan tiket.";
+      toast({
+        title: "Gagal",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleCancelled = () => {
+    fetchTickets();
+  };
+
+  const handleAssigned = () => {
+    fetchTickets();
+  };
+
+  // ─── Column Definitions (Role-Specific) ──────────────────────────────────
+
+  const columns: ColumnDef<TicketRow>[] = useMemo(() => {
+    const role = user?.role;
+
+    const baseColumns: ColumnDef<TicketRow>[] = [
+      {
+        accessorKey: "nomorTiket",
+        header: "No. Tiket",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.nomorTiket}</span>
+        ),
+      },
+      {
+        accessorKey: "judul",
+        header: "Judul",
+        cell: ({ row }) => (
+          <span className="max-w-[200px] truncate block">
+            {row.original.judul}
+          </span>
+        ),
+      },
+    ];
+
+    // Role-specific columns inserted after judul
+    const roleColumns: ColumnDef<TicketRow>[] = [];
+
+    if (role === "BIDTEKKOM") {
+      // Req 26.2: namaSatker (from creator.nama) and divisiSatker
+      roleColumns.push(
+        {
+          id: "namaSatker",
+          header: "Nama Satker",
+          cell: ({ row }) => (
+            <span>{row.original.creator?.nama || "-"}</span>
+          ),
+        },
+        {
+          accessorKey: "divisiSatker",
+          header: "Divisi Satker",
+          cell: ({ row }) => (
+            <span>{row.original.divisiSatker || "-"}</span>
+          ),
+        }
+      );
+    }
+
+    if (role === "PADAL") {
+      // Req 26.3: namaSatker, lokasi
+      roleColumns.push(
+        {
+          id: "namaSatker",
+          header: "Nama Satker",
+          cell: ({ row }) => (
+            <span>{row.original.creator?.nama || "-"}</span>
+          ),
+        },
+        {
+          accessorKey: "lokasi",
+          header: "Lokasi",
+          cell: ({ row }) => (
+            <span>{row.original.lokasi || "-"}</span>
+          ),
+        }
+      );
+    }
+
+    if (role === "TEKNISI") {
+      // Req 26.4: namaSatker, lokasi
+      roleColumns.push(
+        {
+          id: "namaSatker",
+          header: "Nama Satker",
+          cell: ({ row }) => (
+            <span>{row.original.creator?.nama || "-"}</span>
+          ),
+        },
+        {
+          accessorKey: "lokasi",
+          header: "Lokasi",
+          cell: ({ row }) => (
+            <span>{row.original.lokasi || "-"}</span>
+          ),
+        }
+      );
+    }
+
+    if (role === "SATKER") {
+      // Req 26.1: kategori
+      roleColumns.push({
+        accessorKey: "kategori",
+        header: "Kategori",
+        cell: ({ row }) => (
+          <span>{row.original.kategori || "-"}</span>
+        ),
+      });
+    }
+
+    // Status column
+    const statusColumn: ColumnDef<TicketRow> = {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    };
+
+    // Date column: Padal and Teknisi use tanggalAssign, others use tanggalBuat
+    const dateColumn: ColumnDef<TicketRow> =
+      role === "PADAL" || role === "TEKNISI"
+        ? {
+            id: "tanggalAssign",
+            header: "Tanggal Assign",
+            cell: ({ row }) => (
+              <span className="text-muted-foreground">
+                {row.original.tanggalAssign
+                  ? formatDate(row.original.tanggalAssign)
+                  : "-"}
+              </span>
+            ),
+          }
+        : {
+            accessorKey: "tanggalBuat",
+            header: "Tanggal Buat",
+            cell: ({ row }) => (
+              <span className="text-muted-foreground">
+                {formatDate(row.original.tanggalBuat)}
+              </span>
+            ),
+          };
+
+    // Actions column
+    const actionsColumn: ColumnDef<TicketRow> = {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => {
+        const ticket = row.original;
+        const userRole = user?.role;
+        const userId = user?.userId;
+
+        const canCancel =
+          userRole === "SATKER" &&
+          (ticket.status === "PENDING" || ticket.status === "PROSES") &&
+          (ticket.creatorId === userId || ticket.creator?.nama === user?.nama);
+
+        const canAssign =
+          userRole === "BIDTEKKOM" && ticket.status === "PENDING";
+
+        const canComplete =
+          userRole === "PADAL" &&
+          ticket.status === "PROSES" &&
+          (ticket.padalId === userId || ticket.padal?.id === userId);
+
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewDetail(ticket.id);
+              }}
+              title="Lihat Detail"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+
+            {canCancel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancelClick(ticket);
+                }}
+                title="Batalkan Tiket"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {canAssign && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-900/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAssignClick(ticket);
+                }}
+                title="Assign Tiket"
+              >
+                <UserPlus className="h-4 w-4" />
+              </Button>
+            )}
+
+            {canComplete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCompleteClick(ticket);
+                }}
+                title="Selesaikan Tiket"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        );
+      },
+    };
+
+    return [
+      ...baseColumns,
+      ...roleColumns,
+      statusColumn,
+      dateColumn,
+      actionsColumn,
+    ];
+  }, [user?.role, user?.userId, user?.nama]);
 
   // Total pages calculation
   const pageCount = Math.ceil(totalRows / pagination.pageSize);
@@ -261,7 +510,20 @@ export default function TicketListPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nomor tiket atau judul..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+            className="pl-9"
+          />
+        </div>
+
         <Select
           value={statusFilter}
           onValueChange={(value) => {
@@ -400,6 +662,45 @@ export default function TicketListPage() {
           </div>
         </div>
       )}
+
+      {/* Cancel Ticket Modal */}
+      <CancelTicketModal
+        open={cancelModal.open}
+        onClose={() => setCancelModal({ open: false, ticketId: "", ticketNumber: "" })}
+        ticketId={cancelModal.ticketId}
+        ticketNumber={cancelModal.ticketNumber}
+        onCancelled={handleCancelled}
+      />
+
+      {/* Quick Assign Modal */}
+      {assignModal.open && (
+        <QuickAssignModal
+          open={assignModal.open}
+          onClose={() => setAssignModal({ open: false, ticketId: "", ticketNumber: "" })}
+          ticketId={assignModal.ticketId}
+          ticketNumber={assignModal.ticketNumber}
+          onAssigned={handleAssigned}
+        />
+      )}
+
+      {/* Complete Confirmation Modal */}
+      <ConfirmModal
+        open={completeModal.open}
+        onOpenChange={(open) => {
+          if (!open) setCompleteModal({ open: false, ticketId: "", ticketNumber: "" });
+        }}
+        title="Konfirmasi Selesai"
+        description={
+          <span>
+            Apakah Anda yakin ingin menandai tiket{" "}
+            <span className="font-semibold">{completeModal.ticketNumber}</span>{" "}
+            sebagai selesai? Tindakan ini tidak dapat dibatalkan.
+          </span>
+        }
+        confirmLabel="Ya, Selesaikan"
+        onConfirm={handleConfirmComplete}
+        isLoading={isCompleting}
+      />
     </div>
   );
 }

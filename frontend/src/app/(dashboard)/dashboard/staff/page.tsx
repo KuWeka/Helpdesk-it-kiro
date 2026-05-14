@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Users, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import { useAuth } from "@/providers/AuthProvider";
 import { staffApi } from "@/lib/api";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -318,6 +324,130 @@ export default function StaffManagementPage() {
     fetchUsers(1);
   };
 
+  // ─── Column Definitions ─────────────────────────────────────────────────────
+
+  const columns: ColumnDef<StaffUser>[] = useMemo(
+    () => [
+      {
+        accessorKey: "nama",
+        header: "Nama",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.nama}</span>
+        ),
+      },
+      {
+        accessorKey: "email",
+        header: "Email",
+        cell: ({ row }) => row.original.email,
+      },
+      {
+        accessorKey: "nomorWhatsApp",
+        header: "No. WhatsApp",
+        cell: ({ row }) => row.original.nomorWhatsApp,
+      },
+      {
+        accessorKey: "divisi",
+        header: "Divisi",
+        cell: ({ row }) => row.original.divisi || "-",
+      },
+      {
+        accessorKey: "role",
+        header: "Role",
+        cell: ({ row }) => {
+          const staffUser = row.original;
+          if (staffUser.id === user?.userId) {
+            return (
+              <Badge
+                className={`${ROLE_BADGE_COLORS[staffUser.role]} border-0`}
+              >
+                {ROLE_LABELS[staffUser.role]}
+              </Badge>
+            );
+          }
+          return (
+            <Select
+              value={staffUser.role}
+              onValueChange={(newRole) =>
+                handleRoleSelect(
+                  staffUser.id,
+                  staffUser.nama,
+                  staffUser.role,
+                  newRole
+                )
+              }
+              disabled={!!staffUser.deletedAt}
+            >
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VALID_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {ROLE_LABELS[role]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const staffUser = row.original;
+          return (
+            <Badge
+              variant={staffUser.deletedAt ? "destructive" : "secondary"}
+              className={
+                !staffUser.deletedAt
+                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0"
+                  : ""
+              }
+            >
+              {staffUser.deletedAt ? "Nonaktif" : "Aktif"}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => <span className="text-right block">Aksi</span>,
+        cell: ({ row }) => {
+          const staffUser = row.original;
+          return (
+            <div className="text-right">
+              {staffUser.id !== user?.userId && !staffUser.deletedAt && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 lg:h-8 lg:w-8 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
+                  onClick={() =>
+                    handleDeleteClick(staffUser.id, staffUser.nama)
+                  }
+                  title="Nonaktifkan akun"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [user?.userId]
+  );
+
+  // ─── TanStack Table Instance ────────────────────────────────────────────────
+
+  const table = useReactTable({
+    data: users,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: pagination.totalPages,
+  });
+
   // ─── Loading State ──────────────────────────────────────────────────────────
 
   if (authLoading || (isLoading && users.length === 0)) {
@@ -418,87 +548,32 @@ export default function StaffManagementPage() {
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>No. WhatsApp</TableHead>
-                  <TableHead>Divisi</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {users.map((staffUser) => (
-                  <TableRow key={staffUser.id}>
-                    <TableCell className="font-medium">
-                      {staffUser.nama}
-                    </TableCell>
-                    <TableCell>{staffUser.email}</TableCell>
-                    <TableCell>{staffUser.nomorWhatsApp}</TableCell>
-                    <TableCell>{staffUser.divisi || "-"}</TableCell>
-                    <TableCell>
-                      {/* Role Change Dropdown */}
-                      {staffUser.id === user?.userId ? (
-                        // Cannot change own role
-                        <Badge
-                          className={`${ROLE_BADGE_COLORS[staffUser.role]} border-0`}
-                        >
-                          {ROLE_LABELS[staffUser.role]}
-                        </Badge>
-                      ) : (
-                        <Select
-                          value={staffUser.role}
-                          onValueChange={(newRole) =>
-                            handleRoleSelect(
-                              staffUser.id,
-                              staffUser.nama,
-                              staffUser.role,
-                              newRole
-                            )
-                          }
-                          disabled={!!staffUser.deletedAt}
-                        >
-                          <SelectTrigger className="w-[130px] h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {VALID_ROLES.map((role) => (
-                              <SelectItem key={role} value={role}>
-                                {ROLE_LABELS[role]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={staffUser.deletedAt ? "destructive" : "secondary"}
-                        className={
-                          !staffUser.deletedAt
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0"
-                            : ""
-                        }
-                      >
-                        {staffUser.deletedAt ? "Nonaktif" : "Aktif"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {staffUser.id !== user?.userId && !staffUser.deletedAt && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 lg:h-8 lg:w-8 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
-                          onClick={() =>
-                            handleDeleteClick(staffUser.id, staffUser.nama)
-                          }
-                          title="Nonaktifkan akun"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>
