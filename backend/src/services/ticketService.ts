@@ -225,6 +225,13 @@ export async function listForSatker(
     }
   }
 
+
+  if (filters?.search?.trim()) {
+    where.OR = [
+      { judul: { contains: filters.search.trim() } },
+      { nomorTiket: { contains: filters.search.trim() } },
+    ];
+  }
   // Support unrated=true filter (Req 26.1-26.4)
   if (filters?.unrated) {
     where.status = 'SELESAI';
