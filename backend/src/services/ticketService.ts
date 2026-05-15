@@ -891,6 +891,23 @@ export async function cancel(
         message: `Tiket ${ticket.nomorTiket} telah dibatalkan: ${ticket.judul}`,
       });
     }
+
+    // Notify all Bidtekkom users about cancelled ticket
+    const bidtekkomUsers = await prisma.user.findMany({
+      where: { role: 'BIDTEKKOM', deletedAt: null },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      bidtekkomUsers.map((btUser) =>
+        notificationService.create({
+          userId: btUser.id,
+          type: 'TICKET_CANCELLED',
+          ticketNumber: ticket.nomorTiket,
+          message: `Tiket ${ticket.nomorTiket} telah dibatalkan: ${ticket.judul}`,
+        })
+      )
+    );
   } catch {
     // Notification failure should not break cancellation
   }
