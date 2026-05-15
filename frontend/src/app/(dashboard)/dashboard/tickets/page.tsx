@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useReactTable,
@@ -12,6 +12,7 @@ import {
 import { Ticket, Eye, ChevronLeft, ChevronRight, XCircle, UserPlus, CheckCircle2, Search } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { ticketApi } from "@/lib/api";
+import { useTickets } from "@/hooks";
 import { formatDate } from "@/lib/formatters";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
@@ -77,11 +78,7 @@ export default function TicketListPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // State
-  const [data, setData] = useState<TicketRow[]>([]);
-  const [totalRows, setTotalRows] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Filter state
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") || "ALL"
   );
@@ -97,6 +94,27 @@ export default function TicketListPage() {
 
   // Check for unrated query param (from UnratedTicketsBanner)
   const unratedFilter = searchParams.get("unrated") === "true";
+
+  // Build query params for TanStack Query
+  const queryParams = useMemo(() => {
+    const p: Record<string, string | number> = {
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+    };
+    if (statusFilter && statusFilter !== "ALL") p.status = statusFilter;
+    if (searchQuery.trim()) p.search = searchQuery.trim();
+    if (unratedFilter) p.unrated = "true";
+    if (startDate) p.startDate = startDate;
+    if (endDate) p.endDate = endDate;
+    return p;
+  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter, startDate, endDate]);
+
+  const { data: ticketResult, isLoading, isError, refetch } = useTickets(
+    authLoading || !user ? undefined : queryParams
+  );
+
+  const data = (ticketResult?.data ?? []) as TicketRow[];
+  const totalRows = ticketResult?.pagination?.totalItems ?? 0;
 
   // Cancel modal state
   const [cancelModal, setCancelModal] = useState<{
@@ -119,61 +137,6 @@ export default function TicketListPage() {
     ticketNumber: string;
   }>({ open: false, ticketId: "", ticketNumber: "" });
   const [isCompleting, setIsCompleting] = useState(false);
-
-  // Fetch tickets
-  const fetchTickets = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const params: Record<string, string | number> = {
-        page: pagination.pageIndex + 1,
-        pageSize: pagination.pageSize,
-      };
-
-      if (statusFilter && statusFilter !== "ALL") {
-        params.status = statusFilter;
-      }
-
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-
-      if (unratedFilter) {
-        params.unrated = "true";
-      }
-
-      if (startDate) {
-        params.startDate = startDate;
-      }
-
-      if (endDate) {
-        params.endDate = endDate;
-      }
-
-      const response = await ticketApi.list(params);
-      const resData = response.data;
-
-      // Handle response format: { status, data: [...], pagination: { totalItems } }
-      const tickets = Array.isArray(resData.data) ? resData.data : [];
-      const total = resData.pagination?.totalItems ?? tickets.length;
-
-      setData(tickets);
-      setTotalRows(total);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat daftar tiket";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter, startDate, endDate]);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchTickets();
-    }
-  }, [authLoading, user, fetchTickets]);
 
   // Navigate to ticket detail
   const handleViewDetail = (id: string) => {
@@ -203,7 +166,7 @@ export default function TicketListPage() {
         description: `Tiket ${completeModal.ticketNumber} berhasil diselesaikan.`,
       });
       setCompleteModal({ open: false, ticketId: "", ticketNumber: "" });
-      fetchTickets();
+      refetch();
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -219,11 +182,11 @@ export default function TicketListPage() {
   };
 
   const handleCancelled = () => {
-    fetchTickets();
+    refetch();
   };
 
   const handleAssigned = () => {
-    fetchTickets();
+    refetch();
   };
 
   // ─── Column Definitions (Role-Specific) ──────────────────────────────────
@@ -468,7 +431,7 @@ export default function TicketListPage() {
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
-  if (authLoading || (isLoading && data.length === 0)) {
+  if (authLoading || (isLoading && !ticketResult)) {
     return (
       <div className="space-y-6 p-6">
         <div>
@@ -484,14 +447,14 @@ export default function TicketListPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Daftar Tiket</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">Gagal memuat daftar tiket</p>
         </div>
       </div>
     );
