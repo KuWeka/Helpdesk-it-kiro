@@ -49,8 +49,10 @@ interface ReportTicketRow {
   tanggalAssign: string | null;
   tanggalSelesai: string | null;
   status: string;
-  rating: number | null;
-  feedback: string | null;
+  rating: {
+    bintang: number;
+    feedback: string;
+  } | null;
 }
 
 interface ReportSummary {
@@ -473,10 +475,10 @@ export default function ReportsPage() {
                             <StatusBadge status={ticket.status} />
                           </TableCell>
                           <TableCell>
-                            <RatingStars value={ticket.rating} />
+                            <RatingStars value={ticket.rating?.bintang ?? null} />
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                            {ticket.feedback || "-"}
+                            {ticket.rating?.feedback || "-"}
                           </TableCell>
                         </TableRow>
                       ))}
