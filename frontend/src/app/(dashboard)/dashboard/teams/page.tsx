@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Users, UserPlus, UserMinus, Phone } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/AuthProvider";
 import { staffApi } from "@/lib/api";
+import { useTeams, useAvailableTeknisi } from "@/hooks";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
@@ -46,12 +48,16 @@ interface AvailableTeknisi {
 export default function TeamManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // State
-  const [teams, setTeams] = useState<PadalTeam[]>([]);
-  const [availableTeknisi, setAvailableTeknisi] = useState<AvailableTeknisi[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // TanStack Query hooks
+  const { data: teamsData, isLoading: teamsLoading, isError: teamsError } = useTeams();
+  const { data: teknisiData, isLoading: teknisiLoading, isError: teknisiError } = useAvailableTeknisi();
+
+  const teams = (teamsData ?? []) as PadalTeam[];
+  const availableTeknisi = (teknisiData ?? []) as AvailableTeknisi[];
+  const isLoading = teamsLoading || teknisiLoading;
+  const isError = teamsError || teknisiError;
 
   // Add Teknisi state (per Padal)
   const [selectedTeknisi, setSelectedTeknisi] = useState<Record<string, string>>({});
@@ -73,35 +79,6 @@ export default function TeamManagementPage() {
   });
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
-
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const [teamsRes, teknisiRes] = await Promise.all([
-        staffApi.getTeams(),
-        staffApi.getAvailableTeknisi(),
-      ]);
-
-      setTeams(teamsRes.data.data || []);
-      setAvailableTeknisi(teknisiRes.data.data || []);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat data tim";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchData();
-    }
-  }, [authLoading, user, fetchData]);
-
   // ─── Add Teknisi Handler ────────────────────────────────────────────────────
 
   const handleAddTeknisi = async (padalId: string) => {
@@ -117,7 +94,7 @@ export default function TeamManagementPage() {
       });
       // Clear selection and refresh data
       setSelectedTeknisi((prev) => ({ ...prev, [padalId]: "" }));
-      await fetchData();
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
     } catch (err: unknown) {
       const axiosError = err as { response?: { status?: number; data?: { message?: string } } };
       if (axiosError.response?.status === 409) {
@@ -168,7 +145,7 @@ export default function TeamManagementPage() {
         description: `${removeDialog.teknisiNama} berhasil dilepas dari tim.`,
       });
       setRemoveDialog((prev) => ({ ...prev, open: false }));
-      await fetchData();
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       toast({
@@ -202,14 +179,14 @@ export default function TeamManagementPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Manajemen Tim</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">Gagal memuat data tim</p>
         </div>
       </div>
     );

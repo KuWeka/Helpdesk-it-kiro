@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Users, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useAuth } from "@/providers/AuthProvider";
 import { staffApi } from "@/lib/api";
+import { useStaffUsers } from "@/hooks";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
@@ -77,22 +79,36 @@ const ROLE_BADGE_COLORS: Record<Role, string> = {
 export default function StaffManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Data state
-  const [users, setUsers] = useState<StaffUser[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    pageSize: 20,
-    totalItems: 0,
-    totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Build query params for TanStack Query
+  const staffParams = useMemo(() => {
+    const p: Record<string, string | number> = { page: currentPage };
+    if (searchQuery.trim()) p.search = searchQuery.trim();
+    if (roleFilter !== "all") p.role = roleFilter;
+    if (statusFilter !== "all") p.status = statusFilter;
+    return p;
+  }, [currentPage, searchQuery, roleFilter, statusFilter]);
+
+  const { data: staffResult, isLoading, isError } = useStaffUsers(
+    authLoading || !user ? undefined : staffParams
+  );
+
+  const users = (staffResult?.data ?? []) as StaffUser[];
+  const pagination: PaginationInfo = staffResult?.pagination ?? {
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 0,
+  };
 
   // Role change confirmation state
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -135,48 +151,6 @@ export default function StaffManagementPage() {
     activeTicketCount: 0,
   });
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
-
-  const fetchUsers = useCallback(
-    async (page: number = 1) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const params: Record<string, string | number> = { page };
-        if (searchQuery.trim()) params.search = searchQuery.trim();
-        if (roleFilter !== "all") params.role = roleFilter;
-        if (statusFilter !== "all") params.status = statusFilter;
-
-        const response = await staffApi.listUsers(params);
-        const data = response.data;
-
-        setUsers(data.data || []);
-        setPagination(
-          data.pagination || {
-            page: 1,
-            pageSize: 20,
-            totalItems: 0,
-            totalPages: 0,
-          }
-        );
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Gagal memuat data staff";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchQuery, roleFilter, statusFilter]
-  );
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchUsers(1);
-    }
-  }, [authLoading, user, fetchUsers]);
-
   // ─── Role Change Handlers ───────────────────────────────────────────────────
 
   const handleRoleSelect = (
@@ -210,7 +184,7 @@ export default function StaffManagementPage() {
 
       setRoleChangeModal((prev) => ({ ...prev, open: false }));
       // Refresh the table data
-      await fetchUsers(pagination.page);
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { message?: string } };
@@ -243,7 +217,7 @@ export default function StaffManagementPage() {
       });
 
       setDeleteConfirmModal((prev) => ({ ...prev, open: false }));
-      await fetchUsers(pagination.page);
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { code?: string; message?: string; details?: { activeTicketCount?: number } } };
@@ -288,7 +262,7 @@ export default function StaffManagementPage() {
       });
 
       setActiveTicketWarning((prev) => ({ ...prev, isOpen: false }));
-      await fetchUsers(pagination.page);
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { message?: string } };
@@ -306,14 +280,14 @@ export default function StaffManagementPage() {
   // ─── Pagination Handlers ────────────────────────────────────────────────────
 
   const handlePrevPage = () => {
-    if (pagination.page > 1) {
-      fetchUsers(pagination.page - 1);
+    if (currentPage > 1) {
+      setCurrentPage((p) => p - 1);
     }
   };
 
   const handleNextPage = () => {
-    if (pagination.page < pagination.totalPages) {
-      fetchUsers(pagination.page + 1);
+    if (currentPage < pagination.totalPages) {
+      setCurrentPage((p) => p + 1);
     }
   };
 
@@ -321,7 +295,7 @@ export default function StaffManagementPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchUsers(1);
+    setCurrentPage(1);
   };
 
   // ─── Column Definitions ─────────────────────────────────────────────────────
@@ -450,7 +424,7 @@ export default function StaffManagementPage() {
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
-  if (authLoading || (isLoading && users.length === 0)) {
+  if (authLoading || (isLoading && !staffResult)) {
     return (
       <div className="space-y-6 p-6">
         <div>
@@ -466,14 +440,14 @@ export default function StaffManagementPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Manajemen Staff</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">Gagal memuat data staff</p>
         </div>
       </div>
     );
@@ -509,7 +483,7 @@ export default function StaffManagementPage() {
         </form>
 
         <div className="flex gap-2">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Semua Role" />
             </SelectTrigger>
@@ -523,7 +497,7 @@ export default function StaffManagementPage() {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Semua Status" />
             </SelectTrigger>
