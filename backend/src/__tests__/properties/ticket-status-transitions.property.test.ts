@@ -15,18 +15,19 @@ import * as fc from 'fast-check';
 
 // ─── Status Transition State Machine (pure logic, no database) ───────────────
 
-type TicketStatus = 'PENDING' | 'PROSES' | 'SELESAI' | 'DIBATALKAN';
+type TicketStatus = 'PENDING' | 'PROSES' | 'SELESAI' | 'DIBATALKAN' | 'DITOLAK';
 
-const ALL_STATUSES: TicketStatus[] = ['PENDING', 'PROSES', 'SELESAI', 'DIBATALKAN'];
+const ALL_STATUSES: TicketStatus[] = ['PENDING', 'PROSES', 'SELESAI', 'DIBATALKAN', 'DITOLAK'];
 
-const TERMINAL_STATUSES: TicketStatus[] = ['SELESAI', 'DIBATALKAN'];
+const TERMINAL_STATUSES: TicketStatus[] = ['SELESAI', 'DIBATALKAN', 'DITOLAK'];
 
 // Valid transitions map: from → set of valid targets
 const VALID_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
-  PENDING: ['PROSES', 'DIBATALKAN'],
+  PENDING: ['PROSES', 'DIBATALKAN', 'DITOLAK'],
   PROSES: ['SELESAI', 'DIBATALKAN'],
   SELESAI: [],
   DIBATALKAN: [],
+  DITOLAK: [],
 };
 
 /**
@@ -59,6 +60,7 @@ const terminalStatusArb = fc.constantFrom<TicketStatus>(...TERMINAL_STATUSES);
 const validTransitionPairArb = fc.oneof(
   fc.constant({ from: 'PENDING' as TicketStatus, to: 'PROSES' as TicketStatus }),
   fc.constant({ from: 'PENDING' as TicketStatus, to: 'DIBATALKAN' as TicketStatus }),
+  fc.constant({ from: 'PENDING' as TicketStatus, to: 'DITOLAK' as TicketStatus }),
   fc.constant({ from: 'PROSES' as TicketStatus, to: 'SELESAI' as TicketStatus }),
   fc.constant({ from: 'PROSES' as TicketStatus, to: 'DIBATALKAN' as TicketStatus })
 );

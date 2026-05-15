@@ -1,5 +1,8 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
 import { toast } from '@/components/ui/use-toast';
+export type { PaginatedResult, ApiResponse } from '@shared/types/api';
+
+type RequestConfig = AxiosRequestConfig & { _suppressGlobalToast?: boolean };
 
 // ─── Axios Instance ─────────────────────────────────────────────────────────
 
@@ -137,19 +140,7 @@ export function showErrorToast(title: string, description?: string) {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// ApiResponse is re-exported from @poldahelp/shared above
 
 export interface LoginPayload {
   email: string;
@@ -185,6 +176,10 @@ export interface AssignTicketPayload {
 
 export interface CancelTicketPayload {
   alasanBatal?: string;
+}
+
+export interface RejectTicketPayload {
+  alasanTolak: string;
 }
 
 export interface RatingPayload {
@@ -247,8 +242,8 @@ export const ticketApi = {
   list: (params?: Record<string, string | number>) =>
     api.get('/tickets', { params }),
 
-  getById: (id: string) =>
-    api.get(`/tickets/${id}`),
+  getById: (id: string, config?: RequestConfig) =>
+    api.get(`/tickets/${id}`, config),
 
   assign: (id: string, data: AssignTicketPayload) =>
     api.patch(`/tickets/${id}/assign`, data),
@@ -258,6 +253,9 @@ export const ticketApi = {
 
   cancel: (id: string, data: CancelTicketPayload) =>
     api.patch(`/tickets/${id}/cancel`, data),
+
+  reject: (id: string, data: RejectTicketPayload) =>
+    api.patch(`/tickets/${id}/reject`, data),
 
   downloadAttachment: (ticketId: string, fileId: string) =>
     api.get(`/tickets/${ticketId}/attachments/${fileId}`, {

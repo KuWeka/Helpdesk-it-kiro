@@ -21,8 +21,10 @@ jest.mock('@prisma/client', () => {
       delete: jest.fn(),
     },
   };
+
   return {
     PrismaClient: jest.fn(() => mockPrisma),
+    __mockPrisma: mockPrisma,
     NotificationType: {
       TICKET_CREATED: 'TICKET_CREATED',
       TICKET_ASSIGNED: 'TICKET_ASSIGNED',
@@ -37,9 +39,7 @@ jest.mock('../../server', () => ({
   io: null,
 }));
 
-// Get the mocked prisma instance
-const { PrismaClient } = require('@prisma/client');
-const mockPrisma = new PrismaClient();
+const { __mockPrisma: mockPrisma } = require('@prisma/client');
 
 // Generator for UUID-like user IDs
 const userIdArb = fc.uuid();

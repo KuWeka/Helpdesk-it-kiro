@@ -1,6 +1,13 @@
 import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger';
 
+export class EmailServiceError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'EmailServiceError';
+  }
+}
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
@@ -49,5 +56,6 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     logger.info(`Password reset email sent to ${email}`);
   } catch (error) {
     logger.error('Failed to send password reset email', error);
+    throw new EmailServiceError('Gagal mengirim email reset password', error);
   }
 }

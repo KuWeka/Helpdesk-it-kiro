@@ -18,6 +18,7 @@ import { reportApi } from "@/lib/api";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import { formatDate } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,18 +128,6 @@ function StatusBadge({ status }: { status: string }) {
       {config.label}
     </Badge>
   );
-}
-
-// ─── Date Formatter ─────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 // ─── Star Rating Display ────────────────────────────────────────────────────

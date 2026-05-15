@@ -1,7 +1,8 @@
-import { PrismaClient, NotificationType, Notification } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { NotificationType, Notification } from '@prisma/client';
 import { AppError } from '../utils/AppError';
+import { getIO } from '../lib/socket';
 
-const prisma = new PrismaClient();
 
 /**
  * Paginated notifications result including unread count.
@@ -25,16 +26,6 @@ export interface CreateNotificationDTO {
   type: NotificationType;
   ticketNumber: string;
   message: string;
-}
-
-/**
- * Get the Socket.io server instance lazily to avoid circular dependency.
- * The io instance is exported from server.ts which imports app.ts.
- */
-function getIO() {
-  // Lazy require to avoid circular dependency at module load time
-  const { io } = require('../server');
-  return io;
 }
 
 /**

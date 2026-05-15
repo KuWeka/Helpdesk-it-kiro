@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Bell,
   BellOff,
@@ -17,8 +17,15 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSocket } from "@/providers/SocketProvider";
-import { notificationApi } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useNotifications,
+  useMarkAsRead,
+  useMarkAllAsRead,
+  useDeleteNotification,
+} from "@/hooks/useNotifications";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { formatRelativeTime } from "@/lib/formatters";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,116 +66,45 @@ function getNotificationIcon(type: Notification["type"]) {
   }
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSeconds < 60) return "Baru saja";
-  if (diffMinutes < 60) return `${diffMinutes} menit lalu`;
-  if (diffHours < 24) return `${diffHours} jam lalu`;
-  if (diffDays < 7) return `${diffDays} hari lalu`;
-
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { resetUnreadCount, onNotification } = useSocket();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // State
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Fetch notifications
-  const fetchNotifications = useCallback(async (page: number) => {
-    try {
-      setIsLoading(true);
-      const response = await notificationApi.list({ page });
-      const resData = response.data;
+  // TanStack Query hooks
+  const { data: queryResult, isLoading } = useNotifications(currentPage);
+  const markAsReadMutation = useMarkAsRead();
+  const markAllAsReadMutation = useMarkAllAsRead();
+  const deleteNotificationMutation = useDeleteNotification();
 
-      setNotifications(resData.data || []);
-      setPagination(resData.pagination || null);
-      setUnreadCount(resData.unreadCount || 0);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Gagal memuat notifikasi",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchNotifications(currentPage);
-    }
-  }, [currentPage, authLoading, user, fetchNotifications]);
+  const notifications: Notification[] = (queryResult?.data ?? []) as Notification[];
+  const pagination: PaginationInfo | null = queryResult?.pagination ?? null;
+  const unreadCount = queryResult?.unreadCount ?? 0;
 
   // Listen for real-time notifications via Socket.io
   useEffect(() => {
     const unsubscribe = onNotification((notification) => {
-      // Prepend new notification to the list if on the first page
-      if (currentPage === 1) {
-        setNotifications((prev) => {
-          const newNotification: Notification = {
-            id: notification.id,
-            type: notification.type as Notification["type"],
-            ticketNumber: notification.ticketNumber,
-            message: notification.message,
-            isRead: notification.isRead,
-            createdAt: notification.createdAt,
-          };
-          // Avoid duplicates
-          if (prev.some((n) => n.id === newNotification.id)) {
-            return prev;
-          }
-          // Prepend and keep max 50 items per page
-          return [newNotification, ...prev].slice(0, 50);
-        });
-      }
-      // Update unread count
-      setUnreadCount((prev) => prev + 1);
-      // Update pagination total
-      setPagination((prev) =>
-        prev ? { ...prev, totalItems: prev.totalItems + 1 } : prev
-      );
+      // Invalidate to fetch fresh data including the new notification
+      void notification;
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
 
     return unsubscribe;
-  }, [onNotification, currentPage]);
+  }, [onNotification, queryClient]);
 
   // ─── Actions ────────────────────────────────────────────────────────────────
 
   const handleMarkAsRead = async (id: string) => {
     try {
       setActionLoading(id);
-      await notificationApi.markAsRead(id);
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      await markAsReadMutation.mutateAsync(id);
       resetUnreadCount();
     } catch {
       toast({
@@ -184,13 +120,8 @@ export default function NotificationsPage() {
   const handleMarkAllAsRead = async () => {
     try {
       setActionLoading("mark-all");
-      await notificationApi.markAllAsRead();
-
-      // Update local state
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      await markAllAsReadMutation.mutateAsync();
       resetUnreadCount();
-
       toast({
         title: "Berhasil",
         description: "Semua notifikasi ditandai sudah dibaca",
@@ -209,19 +140,9 @@ export default function NotificationsPage() {
   const handleDelete = async (id: string) => {
     try {
       setActionLoading(id);
-      await notificationApi.delete(id);
-
-      // Find the notification before removing to check if it was unread
       const deletedNotification = notifications.find((n) => n.id === id);
-
-      // Update local state
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-
-      if (deletedNotification && !deletedNotification.isRead) {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-        resetUnreadCount();
-      }
-
+      await deleteNotificationMutation.mutateAsync(id);
+      if (deletedNotification && !deletedNotification.isRead) resetUnreadCount();
       toast({
         title: "Berhasil",
         description: "Notifikasi berhasil dihapus",
@@ -258,7 +179,7 @@ export default function NotificationsPage() {
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
-  if (authLoading || (isLoading && notifications.length === 0)) {
+  if (authLoading || (isLoading && !queryResult)) {
     return (
       <div className="space-y-6">
         <div>

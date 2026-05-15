@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/authenticate';
 import { authorize } from '../middleware/authorize';
 import { validate } from '../middleware/validate';
 import { ticketAttachment } from '../middleware/upload';
-import { createTicketSchema, assignTicketSchema, cancelTicketSchema } from '../validators/ticket';
+import { createTicketSchema, assignTicketSchema, cancelTicketSchema, rejectTicketSchema } from '../validators/ticket';
 import {
   createTicket,
   listTickets,
@@ -12,6 +12,7 @@ import {
   assignTicket,
   completeTicket,
   cancelTicket,
+  rejectTicket,
   downloadAttachment,
 } from '../controllers/ticketController';
 import { submitRatingHandler, getRatingHandler } from '../controllers/ratingController';
@@ -58,6 +59,15 @@ router.patch(
   authorize(Role.SATKER, Role.BIDTEKKOM),
   validate(cancelTicketSchema),
   cancelTicket
+);
+
+// PATCH /api/tickets/:id/reject - Reject ticket (Bidtekkom only)
+router.patch(
+  '/:id/reject',
+  authenticate,
+  authorize(Role.BIDTEKKOM),
+  validate(rejectTicketSchema),
+  rejectTicket
 );
 
 // GET /api/tickets/:id/attachments/:fileId - Download attachment (authorized viewers)

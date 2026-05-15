@@ -58,3 +58,14 @@ export const cancelTicketSchema = z.object({
     .max(500, { message: 'Alasan pembatalan tidak boleh lebih dari 500 karakter' })
     .optional(),
 });
+
+/**
+ * Schema validasi untuk penolakan tiket oleh Bidtekkom.
+ * - alasanTolak: 1-500 karakter, wajib
+ */
+export const rejectTicketSchema = z.object({
+  alasanTolak: z
+    .string({ required_error: 'Alasan penolakan wajib diisi' })
+    .min(1, { message: 'Alasan penolakan wajib diisi' })
+    .max(500, { message: 'Alasan penolakan tidak boleh lebih dari 500 karakter' }),
+});

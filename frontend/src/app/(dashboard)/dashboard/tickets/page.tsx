@@ -11,7 +11,8 @@ import {
 } from "@tanstack/react-table";
 import { Ticket, Eye, ChevronLeft, ChevronRight, XCircle, UserPlus, CheckCircle2, Search } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { ticketApi, type PaginatedResult } from "@/lib/api";
+import { ticketApi } from "@/lib/api";
+import { formatDate } from "@/lib/formatters";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
 import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
@@ -56,16 +57,6 @@ interface TicketRow {
   padalId?: string | null;
 }
 
-// ─── Date Formatter ─────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 // ─── Status Filter Options ──────────────────────────────────────────────────
 
@@ -75,6 +66,7 @@ const STATUS_OPTIONS = [
   { value: "PROSES", label: "Proses" },
   { value: "SELESAI", label: "Selesai" },
   { value: "DIBATALKAN", label: "Dibatalkan" },
+  { value: "DITOLAK", label: "Ditolak" },
 ];
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -701,6 +693,7 @@ export default function TicketListPage() {
         onClose={() => setCancelModal({ open: false, ticketId: "", ticketNumber: "" })}
         ticketId={cancelModal.ticketId}
         ticketNumber={cancelModal.ticketNumber}
+        userRole={user?.role}
         onCancelled={handleCancelled}
       />
 

@@ -1,11 +1,11 @@
+import { prisma } from '../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
+import { TicketStatus } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
-import { PrismaClient } from '@prisma/client';
 import * as ticketService from '../services/ticketService';
 import { AppError } from '../utils/AppError';
 
-const prisma = new PrismaClient();
 
 /**
  * POST /api/tickets
@@ -54,10 +54,21 @@ export async function listTickets(
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
     const pagination = { page, pageSize };
+
+    // Validate status parameter if provided
+    const validStatuses: TicketStatus[] = ['PENDING', 'PROSES', 'SELESAI', 'DIBATALKAN', 'DITOLAK'];
+    const rawStatus = req.query.status as string | undefined;
+    if (rawStatus && rawStatus !== 'ALL' && !validStatuses.includes(rawStatus as TicketStatus)) {
+      throw new AppError(400, 'INVALID_STATUS', 'Nilai status tidak valid');
+    }
+    const statusFilter = (rawStatus && rawStatus !== 'ALL' ? rawStatus as TicketStatus : undefined);
+
     const filters = {
+      status: statusFilter,
       unrated: req.query.unrated === 'true',
       startDate: req.query.startDate as string | undefined,
       endDate: req.query.endDate as string | undefined,
+      search: req.query.search as string | undefined,
     };
 
     let result;
@@ -178,6 +189,31 @@ export async function cancelTicket(
     const { alasanBatal } = req.body;
 
     const ticket = await ticketService.cancel(id, userId, role, alasanBatal);
+
+    res.status(200).json({
+      status: 'success',
+      data: ticket,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/tickets/:id/reject
+ * Reject a ticket (Bidtekkom only).
+ */
+export async function rejectTicket(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const actorId = req.user!.userId;
+    const { id } = req.params;
+    const { alasanTolak } = req.body;
+
+    const ticket = await ticketService.reject(id, actorId, alasanTolak);
 
     res.status(200).json({
       status: 'success',

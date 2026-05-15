@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   FileText,
   Search,
@@ -16,8 +16,8 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { useAuth } from "@/providers/AuthProvider";
-import { auditApi } from "@/lib/api";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useAuditLogs } from "@/hooks/useAudit";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatTimestamp, formatMetadata } from "@/lib/formatters";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ type AuditEventType =
   | "TICKET_ASSIGNMENT"
   | "TICKET_COMPLETION"
   | "TICKET_CANCELLATION"
+  | "TICKET_REJECTION"
   | "TICKET_RATING"
   | "USER_SOFT_DELETE"
   | "ROLE_CHANGE"
@@ -82,6 +84,7 @@ const EVENT_TYPES: AuditEventType[] = [
   "TICKET_ASSIGNMENT",
   "TICKET_COMPLETION",
   "TICKET_CANCELLATION",
+  "TICKET_REJECTION",
   "TICKET_RATING",
   "USER_SOFT_DELETE",
   "ROLE_CHANGE",
@@ -99,6 +102,7 @@ const EVENT_TYPE_LABELS: Record<AuditEventType, string> = {
   TICKET_ASSIGNMENT: "Assign Tiket",
   TICKET_COMPLETION: "Selesai Tiket",
   TICKET_CANCELLATION: "Batal Tiket",
+  TICKET_REJECTION: "Tolak Tiket",
   TICKET_RATING: "Rating Tiket",
   USER_SOFT_DELETE: "Hapus User",
   ROLE_CHANGE: "Ubah Role",
@@ -116,6 +120,7 @@ const EVENT_TYPE_COLORS: Record<AuditEventType, string> = {
   TICKET_ASSIGNMENT: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   TICKET_COMPLETION: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
   TICKET_CANCELLATION: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  TICKET_REJECTION: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   TICKET_RATING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   USER_SOFT_DELETE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   ROLE_CHANGE: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
@@ -125,26 +130,6 @@ const EVENT_TYPE_COLORS: Record<AuditEventType, string> = {
   TEAM_ASSIGNMENT: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
   TEAM_REMOVAL: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
 };
-
-// ─── Helper Functions ───────────────────────────────────────────────────────
-
-function formatTimestamp(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatMetadata(metadata: Record<string, unknown> | null): string {
-  if (!metadata || Object.keys(metadata).length === 0) return "-";
-  return Object.entries(metadata)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join(", ");
-}
 
 // ─── Column Definitions ─────────────────────────────────────────────────────
 
@@ -202,22 +187,35 @@ const columns: ColumnDef<AuditLogEntry, unknown>[] = [
 export default function AuditLogPage() {
   const { user, isLoading: authLoading } = useAuth();
 
-  // Data state
-  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    pageSize: 20,
-    totalItems: 0,
-    totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Build query params for TanStack Query
+  const queryParams: Record<string, string | number> = { page, pageSize: 20 };
+  if (searchQuery.trim()) queryParams.search = searchQuery.trim();
+  if (eventTypeFilter !== "all") queryParams.eventType = eventTypeFilter;
+  if (startDate) queryParams.startDate = new Date(startDate).toISOString();
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    queryParams.endDate = end.toISOString();
+  }
+
+  const { data: queryResult, isLoading, isError } = useAuditLogs(
+    authLoading || !user ? undefined : queryParams
+  );
+
+  const logs: AuditLogEntry[] = (queryResult?.data ?? []) as AuditLogEntry[];
+  const pagination: PaginationInfo = queryResult?.pagination ?? {
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 0,
+  };
 
   // ─── TanStack Table ─────────────────────────────────────────────────────────
 
@@ -230,74 +228,19 @@ export default function AuditLogPage() {
     pageCount: pagination.totalPages,
   });
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
-
-  const fetchLogs = useCallback(
-    async (page: number = 1) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const params: Record<string, string | number> = {
-          page,
-          pageSize: 20,
-        };
-        if (searchQuery.trim()) params.search = searchQuery.trim();
-        if (eventTypeFilter !== "all") params.eventType = eventTypeFilter;
-        if (startDate) params.startDate = new Date(startDate).toISOString();
-        if (endDate) {
-          // Set end date to end of day
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          params.endDate = end.toISOString();
-        }
-
-        const response = await auditApi.list(params);
-        const data = response.data;
-
-        setLogs(data.data || []);
-        setPagination(
-          data.pagination || {
-            page: 1,
-            pageSize: 20,
-            totalItems: 0,
-            totalPages: 0,
-          }
-        );
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Gagal memuat data audit log";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchQuery, eventTypeFilter, startDate, endDate]
-  );
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchLogs(1);
-    }
-  }, [authLoading, user, fetchLogs]);
-
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchLogs(1);
+    setPage(1);
   };
 
   const handlePrevPage = () => {
-    if (pagination.page > 1) {
-      fetchLogs(pagination.page - 1);
-    }
+    if (pagination.page > 1) setPage((p) => p - 1);
   };
 
   const handleNextPage = () => {
-    if (pagination.page < pagination.totalPages) {
-      fetchLogs(pagination.page + 1);
-    }
+    if (pagination.page < pagination.totalPages) setPage((p) => p + 1);
   };
 
   const handleClearFilters = () => {
@@ -305,6 +248,7 @@ export default function AuditLogPage() {
     setEventTypeFilter("all");
     setStartDate("");
     setEndDate("");
+    setPage(1);
   };
 
   const hasActiveFilters =
@@ -315,7 +259,7 @@ export default function AuditLogPage() {
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
-  if (authLoading || (isLoading && logs.length === 0)) {
+  if (authLoading || (isLoading && !queryResult)) {
     return (
       <div className="space-y-6 p-6">
         <div>
@@ -331,14 +275,14 @@ export default function AuditLogPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Audit Log</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">Gagal memuat data audit log</p>
         </div>
       </div>
     );

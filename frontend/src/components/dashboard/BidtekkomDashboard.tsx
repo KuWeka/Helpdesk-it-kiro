@@ -36,6 +36,7 @@ import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { dashboardApi } from "@/lib/api";
+import { formatDate } from "@/lib/formatters";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ interface BidtekkomData {
     PROSES: number;
     SELESAI: number;
     DIBATALKAN: number;
+    DITOLAK: number;
   };
   userCount: number;
   monthlyTrend: MonthlyTrend[];
@@ -73,15 +75,6 @@ const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
   "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
 ];
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -189,6 +182,7 @@ export function BidtekkomDashboard() {
     { name: "PROSES", value: data.counts.PROSES, fill: "#0d9488" },
     { name: "SELESAI", value: data.counts.SELESAI, fill: "#16a34a" },
     { name: "DIBATALKAN", value: data.counts.DIBATALKAN, fill: "#dc2626" },
+    { name: "DITOLAK", value: data.counts.DITOLAK, fill: "#be123c" },
   ];
 
   const lineChartData = data.monthlyTrend.map((item) => ({

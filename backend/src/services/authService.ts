@@ -1,12 +1,11 @@
+import { prisma } from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import { JwtUserPayload } from '../types/express';
 import { sendPasswordResetEmail } from './emailService';
 
-const prisma = new PrismaClient();
 
 interface RegisterData {
   nama: string;
@@ -151,7 +150,20 @@ export async function requestPasswordReset(email: string): Promise<void> {
   });
 
   // Send email with the UNHASHED token
-  await sendPasswordResetEmail(user.email, resetToken);
+  try {
+    await sendPasswordResetEmail(user.email, resetToken);
+  } catch {
+    // Rollback: clear reset token if email failed to send
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: null, passwordResetExpires: null },
+    });
+    throw new AppError(
+      503,
+      'EMAIL_SEND_FAILED',
+      'Gagal mengirim email reset password. Silakan coba beberapa saat lagi.'
+    );
+  }
 }
 
 /**

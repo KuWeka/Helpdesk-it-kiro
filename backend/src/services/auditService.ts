@@ -1,6 +1,6 @@
-import { PrismaClient, AuditEventType, Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { AuditEventType, Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 /**
  * Paginated result format matching shared/types/api.ts PaginatedResult interface.

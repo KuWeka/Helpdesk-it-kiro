@@ -11,6 +11,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { dashboardApi, ticketApi } from "@/lib/api";
+import { formatDate } from "@/lib/formatters";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
@@ -138,16 +139,6 @@ export function PadalDashboard() {
     } finally {
       setIsCompleting(false);
     }
-  };
-
-  // Format date for display
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
   };
 
   // ─── Loading State ──────────────────────────────────────────────────────

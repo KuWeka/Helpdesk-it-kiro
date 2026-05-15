@@ -1,7 +1,7 @@
 // Single source of truth for ticket status display config.
 // Import this in StatusBadge and any dashboard component that needs status colors.
 
-export type TicketStatus = 'PENDING' | 'PROSES' | 'SELESAI' | 'DIBATALKAN';
+export type TicketStatus = 'PENDING' | 'PROSES' | 'SELESAI' | 'DIBATALKAN' | 'DITOLAK';
 
 export const STATUS_CONFIG: Record<TicketStatus, {
   label: string;
@@ -22,5 +22,9 @@ export const STATUS_CONFIG: Record<TicketStatus, {
   DIBATALKAN: {
     label: 'Dibatalkan',
     className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800',
+  },
+  DITOLAK: {
+    label: 'Ditolak',
+    className: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800',
   },
 };

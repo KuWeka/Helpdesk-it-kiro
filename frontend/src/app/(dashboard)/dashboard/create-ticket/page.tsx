@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getFileExtension, formatFileSize } from "@/lib/formatters";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -54,18 +55,6 @@ const ALLOWED_EXTENSIONS = [
   "xls",
   "xlsx",
 ];
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function getFileExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() || "";
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 // ─── Page Component ─────────────────────────────────────────────────────────
 

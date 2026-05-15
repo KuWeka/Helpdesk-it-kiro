@@ -2,6 +2,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import { setupSocketAuth } from './socket';
+import { setIO } from './lib/socket';
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
@@ -18,10 +19,13 @@ const io = new SocketIOServer(server, {
   transports: ['websocket', 'polling'],
 });
 
+// Initialize Socket.io singleton (TASK-009)
+setIO(io);
+
 // Setup Socket.io JWT authentication and connection handlers
 setupSocketAuth(io);
 
-// Export io instance for use in notification service
+// Export io instance for backwards compatibility
 export { io };
 
 // Start server

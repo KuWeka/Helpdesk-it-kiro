@@ -1,8 +1,8 @@
-import { PrismaClient, Rating } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { Rating } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import * as auditService from './auditService';
 
-const prisma = new PrismaClient();
 
 /**
  * Rating data transfer object for submitting a rating.

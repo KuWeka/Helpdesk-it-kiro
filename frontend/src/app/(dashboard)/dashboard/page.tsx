@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
   Loader2,
   CheckCircle2,
   XCircle,
+  ShieldX,
   Ticket,
   Plus,
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { dashboardApi } from "@/lib/api";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { useSatkerDashboard } from "@/hooks/useDashboard";
 import { UnratedTicketsBanner } from "@/components/dashboard/UnratedTicketsBanner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
@@ -27,62 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-interface SatkerDashboardData {
-  counts: {
-    PENDING: number;
-    PROSES: number;
-    SELESAI: number;
-    DIBATALKAN: number;
-  };
-  recentTickets: {
-    id: string;
-    nomorTiket: string;
-    judul: string;
-    status: string;
-    tanggalBuat: string;
-  }[];
-  unratedCount: number;
-}
-
-// ─── Date Formatter ─────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/formatters";
 
 // ─── Satker Dashboard Content ───────────────────────────────────────────────
 
 function SatkerDashboard() {
   const router = useRouter();
-  const [data, setData] = useState<SatkerDashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true);
-        const response = await dashboardApi.getSatker();
-        setData(response.data.data);
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Gagal memuat data dashboard";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+  const { data, isLoading, isError } = useSatkerDashboard();
 
   if (isLoading) {
     return (
@@ -93,21 +45,28 @@ function SatkerDashboard() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-destructive">{error}</p>
+        <p className="text-destructive">Gagal memuat data dashboard</p>
       </div>
     );
   }
 
   if (!data) return null;
 
+  const typedData = data as {
+    counts: { PENDING: number; PROSES: number; SELESAI: number; DIBATALKAN: number; DITOLAK: number };
+    recentTickets: { id: string; nomorTiket: string; judul: string; status: string; tanggalBuat: string }[];
+    unratedCount: number;
+  };
+
   const hasTickets =
-    data.counts.PENDING +
-      data.counts.PROSES +
-      data.counts.SELESAI +
-      data.counts.DIBATALKAN >
+    typedData.counts.PENDING +
+      typedData.counts.PROSES +
+      typedData.counts.SELESAI +
+      typedData.counts.DIBATALKAN +
+      typedData.counts.DITOLAK >
     0;
 
   // Empty state: no tickets at all
@@ -130,35 +89,41 @@ function SatkerDashboard() {
   return (
     <div className="space-y-6">
       {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Pending"
-          value={data.counts.PENDING}
+          value={typedData.counts.PENDING}
           icon={Clock}
           variant="warning"
         />
         <StatCard
           title="Proses"
-          value={data.counts.PROSES}
+          value={typedData.counts.PROSES}
           icon={Loader2}
           variant="info"
         />
         <StatCard
           title="Selesai"
-          value={data.counts.SELESAI}
+          value={typedData.counts.SELESAI}
           icon={CheckCircle2}
           variant="success"
         />
         <StatCard
           title="Dibatalkan"
-          value={data.counts.DIBATALKAN}
+          value={typedData.counts.DIBATALKAN}
           icon={XCircle}
+          variant="danger"
+        />
+        <StatCard
+          title="Ditolak"
+          value={typedData.counts.DITOLAK}
+          icon={ShieldX}
           variant="danger"
         />
       </div>
 
       {/* Unrated Tickets Banner */}
-      <UnratedTicketsBanner count={data.unratedCount} />
+      <UnratedTicketsBanner count={typedData.unratedCount} />
 
       {/* Recent Tickets Table */}
       <Card>
@@ -168,7 +133,7 @@ function SatkerDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {data.recentTickets.length === 0 ? (
+          {typedData.recentTickets.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">
               Tidak ada tiket terbaru.
             </p>
@@ -184,7 +149,7 @@ function SatkerDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.recentTickets.map((ticket) => (
+                  {typedData.recentTickets.map((ticket) => (
                     <TableRow
                       key={ticket.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"

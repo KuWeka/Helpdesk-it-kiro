@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, notFound } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   UserPlus,
+  ShieldX,
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { ticketApi, staffApi } from "@/lib/api";
@@ -41,6 +42,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
+import { RejectTicketModal } from "@/components/tickets/RejectTicketModal";
+import { formatDateTime, formatFileSize } from "@/lib/formatters";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -97,24 +100,6 @@ interface PadalUser {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 const CATEGORY_LABELS: Record<string, string> = {
   HARDWARE: "Hardware",
   SOFTWARE: "Software",
@@ -138,10 +123,15 @@ export default function TicketDetailPage() {
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   // Action states
   const [completeLoading, setCompleteLoading] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
 
@@ -153,12 +143,16 @@ export default function TicketDetailPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await ticketApi.getById(ticketId);
+      setErrorStatus(null);
+      const response = await ticketApi.getById(ticketId, { _suppressGlobalToast: true });
       setTicket(response.data.data || response.data);
     } catch (err: unknown) {
+      const status =
+        (err as { response?: { status?: number } })?.response?.status ?? null;
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message || "Gagal memuat detail tiket";
+      setErrorStatus(status);
       setError(message);
     } finally {
       setIsLoading(false);
@@ -236,6 +230,7 @@ export default function TicketDetailPage() {
   // Handle optimistic assign: update ticket state immediately
   function handleOptimisticAssign(padalId: string, padalNama: string) {
     if (!ticket) return;
+    setAssignLoading(true);
     previousTicketRef.current = { ...ticket };
     setTicket({
       ...ticket,
@@ -249,6 +244,7 @@ export default function TicketDetailPage() {
   // Handle assign success: refetch for accurate server data
   async function handleAssignSuccess() {
     await fetchTicket();
+    setAssignLoading(false);
     toast({
       title: "Tiket Diassign",
       description: `Tiket ${ticket?.nomorTiket} berhasil diassign.`,
@@ -258,6 +254,7 @@ export default function TicketDetailPage() {
 
   // Handle assign error: revert optimistic update
   function handleAssignError(message: string) {
+    setAssignLoading(false);
     if (previousTicketRef.current) {
       setTicket(previousTicketRef.current);
     }
@@ -272,6 +269,7 @@ export default function TicketDetailPage() {
   // Handle optimistic cancel: update ticket state immediately
   function handleOptimisticCancel(alasanBatal?: string) {
     if (!ticket) return;
+    setCancelLoading(true);
     previousTicketRef.current = { ...ticket };
     setTicket({
       ...ticket,
@@ -283,6 +281,7 @@ export default function TicketDetailPage() {
   // Handle cancel success: refetch for accurate server data
   async function handleCancelSuccess() {
     await fetchTicket();
+    setCancelLoading(false);
     toast({
       title: "Tiket Dibatalkan",
       description: `Tiket ${ticket?.nomorTiket} berhasil dibatalkan.`,
@@ -292,6 +291,44 @@ export default function TicketDetailPage() {
 
   // Handle cancel error: revert optimistic update
   function handleCancelError(message: string) {
+    setCancelLoading(false);
+    if (previousTicketRef.current) {
+      setTicket(previousTicketRef.current);
+    }
+    toast({
+      title: "Gagal",
+      description: message,
+      variant: "destructive",
+    });
+    previousTicketRef.current = null;
+  }
+
+  // Handle optimistic reject: update ticket state immediately
+  function handleOptimisticReject(alasanTolak: string) {
+    if (!ticket) return;
+    setRejectLoading(true);
+    previousTicketRef.current = { ...ticket };
+    setTicket({
+      ...ticket,
+      status: "DITOLAK",
+      alasanBatal: alasanTolak,
+    });
+  }
+
+  // Handle reject success: refetch for accurate server data
+  async function handleRejectSuccess() {
+    await fetchTicket();
+    setRejectLoading(false);
+    toast({
+      title: "Tiket Ditolak",
+      description: `Tiket ${ticket?.nomorTiket} berhasil ditolak.`,
+    });
+    previousTicketRef.current = null;
+  }
+
+  // Handle reject error: revert optimistic update
+  function handleRejectError(message: string) {
+    setRejectLoading(false);
     if (previousTicketRef.current) {
       setTicket(previousTicketRef.current);
     }
@@ -316,9 +353,12 @@ export default function TicketDetailPage() {
     (isSatkerOwner || isBidtekkom) &&
     (ticket?.status === "PENDING" || ticket?.status === "PROSES");
   const canAssign = isBidtekkom && ticket?.status === "PENDING";
+  const canReject = isBidtekkom && ticket?.status === "PENDING";
   const canComplete = isAssignedPadal && ticket?.status === "PROSES";
   const showRatingForm =
     isSatkerOwner && ticket?.status === "SELESAI" && !ticket?.rating;
+  const isActionLoading =
+    completeLoading || assignLoading || cancelLoading || rejectLoading;
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
@@ -356,6 +396,32 @@ export default function TicketDetailPage() {
   }
 
   // ─── Error State ────────────────────────────────────────────────────────────
+
+  if (errorStatus === 404 && !ticket) {
+    notFound();
+  }
+
+  if (errorStatus === 403 && !ticket) {
+    return (
+      <div className="space-y-6 p-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali
+        </Button>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+          <p className="text-lg font-semibold">Akses Ditolak</p>
+          <p className="mt-2 text-sm">
+            Anda tidak memiliki akses ke tiket ini.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error && !ticket) {
     return (
@@ -407,7 +473,7 @@ export default function TicketDetailPage() {
       </div>
 
       {/* Action Buttons (not shown for Teknisi) */}
-      {!isTeknisi && (canAssign || canCancel || canComplete) && (
+      {!isTeknisi && (canAssign || canReject || canCancel || canComplete) && (
         <div className="flex flex-wrap gap-2">
           {canAssign && (
             <Button
@@ -415,9 +481,30 @@ export default function TicketDetailPage() {
               size="sm"
               onClick={() => setAssignModalOpen(true)}
               className="gap-2"
+              disabled={isActionLoading}
             >
-              <UserPlus className="h-4 w-4" />
+              {assignLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
               Assign ke Padal
+            </Button>
+          )}
+          {canReject && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setRejectModalOpen(true)}
+              className="gap-2"
+              disabled={isActionLoading}
+            >
+              {rejectLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldX className="h-4 w-4" />
+              )}
+              Tolak Tiket
             </Button>
           )}
           {canComplete && (
@@ -426,8 +513,13 @@ export default function TicketDetailPage() {
               size="sm"
               onClick={() => setConfirmCompleteOpen(true)}
               className="gap-2 bg-green-600 hover:bg-green-700"
+              disabled={isActionLoading}
             >
-              <CheckCircle2 className="h-4 w-4" />
+              {completeLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               Selesaikan Tiket
             </Button>
           )}
@@ -437,8 +529,13 @@ export default function TicketDetailPage() {
               size="sm"
               onClick={() => setCancelModalOpen(true)}
               className="gap-2"
+              disabled={isActionLoading}
             >
-              <XCircle className="h-4 w-4" />
+              {cancelLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
               Batalkan Tiket
             </Button>
           )}
@@ -503,12 +600,12 @@ export default function TicketDetailPage() {
             </Card>
           )}
 
-          {/* Cancellation Reason */}
-          {ticket.status === "DIBATALKAN" && ticket.alasanBatal && (
+          {/* Cancellation/Rejection Reason */}
+          {(ticket.status === "DIBATALKAN" || ticket.status === "DITOLAK") && ticket.alasanBatal && (
             <Card className="border-red-200 dark:border-red-800">
               <CardHeader>
                 <CardTitle className="text-lg text-destructive">
-                  Alasan Pembatalan
+                  {ticket.status === "DITOLAK" ? "Alasan Penolakan" : "Alasan Pembatalan"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -580,17 +677,17 @@ export default function TicketDetailPage() {
               <InfoRow
                 icon={<Calendar className="h-4 w-4" />}
                 label="Tanggal Buat"
-                value={formatDate(ticket.tanggalBuat)}
+                value={formatDateTime(ticket.tanggalBuat)}
               />
               <InfoRow
                 icon={<Calendar className="h-4 w-4" />}
                 label="Tanggal Assign"
-                value={formatDate(ticket.tanggalAssign)}
+                value={formatDateTime(ticket.tanggalAssign)}
               />
               <InfoRow
                 icon={<Calendar className="h-4 w-4" />}
                 label="Tanggal Selesai"
-                value={formatDate(ticket.tanggalSelesai)}
+                value={formatDateTime(ticket.tanggalSelesai)}
               />
             </CardContent>
           </Card>
@@ -603,9 +700,21 @@ export default function TicketDetailPage() {
         onClose={() => setCancelModalOpen(false)}
         ticketId={ticket.id}
         ticketNumber={ticket.nomorTiket}
+        userRole={user?.role}
         onCancelled={handleCancelSuccess}
         onOptimisticCancel={handleOptimisticCancel}
         onCancelError={handleCancelError}
+      />
+
+      {/* Reject Modal */}
+      <RejectTicketModal
+        open={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        ticketId={ticket.id}
+        ticketNumber={ticket.nomorTiket}
+        onRejected={handleRejectSuccess}
+        onOptimisticReject={handleOptimisticReject}
+        onRejectError={handleRejectError}
       />
 
       {/* Assign Modal */}

@@ -25,7 +25,11 @@ import {
 import { profileApi } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import { useToast } from "@/components/ui/use-toast";
-import { locales, localeNames, type Locale } from "@/i18n/config";
+// Language constants (i18n removed — inlined here)
+type Locale = 'id' | 'en';
+const locales: Locale[] = ['id', 'en'];
+const localeNames: Record<Locale, string> = { id: 'Bahasa Indonesia', en: 'English' };
+import { getFileExtension, getInitials } from "@/lib/formatters";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,13 +64,6 @@ const API_BASE_URL =
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getFileExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() || "";
-}
-
-function getInitials(nama: string): string {
-  return nama.charAt(0).toUpperCase();
-}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

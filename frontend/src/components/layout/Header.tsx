@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, Bell, User, Settings, LogOut } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import { useAuth } from '@/providers/AuthProvider';
 
 // ─── Page Title Mapping ──────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ function getInitials(nama: string): string {
 export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
   const { logout } = useAuth();
   const pathname = usePathname();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white dark:bg-[#111827] px-4 lg:px-6 shadow-sm backdrop-blur-sm">
@@ -137,13 +139,25 @@ export function Header({ onMenuToggle, user, unreadCount }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
-              onClick={logout}
+              onClick={() => setShowLogoutConfirm(true)}
             >
               <LogOut className="size-4" />
               <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <ConfirmModal
+          open={showLogoutConfirm}
+          onOpenChange={setShowLogoutConfirm}
+          onConfirm={logout}
+          onCancel={() => setShowLogoutConfirm(false)}
+          title="Keluar dari Aplikasi?"
+          description="Anda akan keluar dari sesi ini."
+          confirmLabel="Keluar"
+          cancelLabel="Batal"
+          variant="destructive"
+        />
       </div>
     </header>
   );

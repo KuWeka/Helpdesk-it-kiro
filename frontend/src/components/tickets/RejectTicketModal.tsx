@@ -14,28 +14,26 @@ import { Label } from "@/components/ui/label";
 import { ticketApi } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
-interface CancelTicketModalProps {
+interface RejectTicketModalProps {
   open: boolean;
   onClose: () => void;
   ticketId: string;
   ticketNumber: string;
-  userRole?: "SATKER" | "BIDTEKKOM" | "PADAL" | "TEKNISI";
-  onCancelled: () => void;
-  onOptimisticCancel?: (alasanBatal?: string) => void;
-  onCancelError?: (message: string) => void;
+  onRejected: () => void;
+  onOptimisticReject?: (alasanTolak: string) => void;
+  onRejectError?: (message: string) => void;
 }
 
-export function CancelTicketModal({
+export function RejectTicketModal({
   open,
   onClose,
   ticketId,
   ticketNumber,
-  userRole,
-  onCancelled,
-  onOptimisticCancel,
-  onCancelError,
-}: CancelTicketModalProps) {
-  const [alasanBatal, setAlasanBatal] = useState("");
+  onRejected,
+  onOptimisticReject,
+  onRejectError,
+}: RejectTicketModalProps) {
+  const [alasanTolak, setAlasanTolak] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,17 +45,17 @@ export function CancelTicketModal({
   }
 
   function resetState() {
-    setAlasanBatal("");
+    setAlasanTolak("");
     setError(null);
     setLoading(false);
   }
 
   function getValidationError(): string | null {
-    if (userRole === "BIDTEKKOM" && !alasanBatal.trim()) {
-      return "Alasan pembatalan wajib diisi oleh Bidtekkom";
+    if (!alasanTolak.trim()) {
+      return "Alasan penolakan wajib diisi";
     }
-    if (alasanBatal.length > 0 && alasanBatal.length > 500) {
-      return "Alasan pembatalan tidak boleh lebih dari 500 karakter";
+    if (alasanTolak.length > 500) {
+      return "Alasan penolakan tidak boleh lebih dari 500 karakter";
     }
     return null;
   }
@@ -72,26 +70,25 @@ export function CancelTicketModal({
     setLoading(true);
     setError(null);
 
-    const reason = alasanBatal.trim() || undefined;
+    const reason = alasanTolak.trim();
 
-    // Optimistic update: immediately update parent state
-    if (onOptimisticCancel) {
-      onOptimisticCancel(reason);
+    if (onOptimisticReject) {
+      onOptimisticReject(reason);
     }
     resetState();
     onClose();
 
     try {
-      await ticketApi.cancel(ticketId, {
-        alasanBatal: reason,
+      await ticketApi.reject(ticketId, {
+        alasanTolak: reason,
       });
-      onCancelled();
+      onRejected();
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Gagal membatalkan tiket. Silakan coba lagi.";
-      if (onCancelError) {
-        onCancelError(message);
+          ?.message || "Gagal menolak tiket. Silakan coba lagi.";
+      if (onRejectError) {
+        onRejectError(message);
       }
     }
   }
@@ -100,33 +97,27 @@ export function CancelTicketModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Batalkan Tiket</DialogTitle>
+          <DialogTitle>Tolak Tiket</DialogTitle>
           <DialogDescription>
-            Apakah Anda yakin ingin membatalkan tiket{" "}
-            <span className="font-semibold">{ticketNumber}</span>? Tindakan ini
-            tidak dapat dibatalkan.
+            Anda akan menolak tiket <span className="font-semibold">{ticketNumber}</span>.
+            Mohon isi alasan penolakan.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="alasanBatal">
-              Alasan Pembatalan{" "}
-              <span className="text-muted-foreground text-xs">
-                (wajib untuk Bidtekkom)
-              </span>
-            </Label>
+            <Label htmlFor="alasanTolak">Alasan Penolakan</Label>
             <Textarea
-              id="alasanBatal"
-              placeholder="Masukkan alasan pembatalan tiket..."
-              value={alasanBatal}
-              onChange={(e) => setAlasanBatal(e.target.value)}
+              id="alasanTolak"
+              placeholder="Masukkan alasan penolakan tiket..."
+              value={alasanTolak}
+              onChange={(e) => setAlasanTolak(e.target.value)}
               maxLength={500}
               rows={3}
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground text-right">
-              {alasanBatal.length}/500
+              {alasanTolak.length}/500
             </p>
           </div>
 
@@ -142,7 +133,7 @@ export function CancelTicketModal({
               disabled={loading}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Batalkan Tiket
+              Tolak Tiket
             </Button>
           </div>
         </div>

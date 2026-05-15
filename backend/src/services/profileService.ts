@@ -1,9 +1,8 @@
+import { prisma } from '../lib/prisma';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import * as auditService from './auditService';
 
-const prisma = new PrismaClient();
 
 /**
  * User profile data returned by getProfile.

@@ -1,6 +1,6 @@
-import { PrismaClient, TicketStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { TicketStatus } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 /**
  * Satker Dashboard Data
@@ -47,6 +47,7 @@ export async function getSatkerDashboard(userId: string) {
     PROSES: 0,
     SELESAI: 0,
     DIBATALKAN: 0,
+    DITOLAK: 0,
   };
 
   for (const item of statusCounts) {
@@ -135,6 +136,7 @@ export async function getBidtekkomDashboard() {
     PROSES: 0,
     SELESAI: 0,
     DIBATALKAN: 0,
+    DITOLAK: 0,
   };
   let totalTickets = 0;
 

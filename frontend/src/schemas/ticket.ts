@@ -49,6 +49,18 @@ export const cancelTicketSchema = z.object({
     .optional(),
 });
 
+/**
+ * Schema validasi untuk penolakan tiket oleh Bidtekkom.
+ * - alasanTolak: 1-500 karakter, wajib
+ */
+export const rejectTicketSchema = z.object({
+  alasanTolak: z
+    .string({ required_error: 'Alasan penolakan wajib diisi' })
+    .min(1, { message: 'Alasan penolakan wajib diisi' })
+    .max(500, { message: 'Alasan penolakan tidak boleh lebih dari 500 karakter' }),
+});
+
 // Inferred types for form usage with React Hook Form
 export type CreateTicketFormData = z.infer<typeof createTicketSchema>;
 export type CancelTicketFormData = z.infer<typeof cancelTicketSchema>;
+export type RejectTicketFormData = z.infer<typeof rejectTicketSchema>;

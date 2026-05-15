@@ -1,11 +1,11 @@
-import { PrismaClient, TicketCategory, Role } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { TicketCategory, Role, Prisma, TicketStatus } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import { generateTicketNumber } from '../utils/ticketNumber';
 import { generateUniqueFilename } from '../utils/fileNaming';
 import * as auditService from './auditService';
 import * as notificationService from './notificationService';
 
-const prisma = new PrismaClient();
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -22,6 +22,8 @@ export interface PaginationParams {
 }
 
 export interface TicketFilters {
+  status?: TicketStatus;
+  search?: string;
   unrated?: boolean;
   startDate?: string;
   endDate?: string;
@@ -197,10 +199,21 @@ export async function listForSatker(
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
   const skip = (page - 1) * pageSize;
 
-  // Build where clause
-  const where: any = {
+  // Build where clause (TASK-008: Use Prisma type instead of any)
+  const where: Prisma.TicketWhereInput = {
     creatorId: userId,
   };
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.search?.trim()) {
+    where.OR = [
+      { judul: { contains: filters.search.trim() } },
+      { nomorTiket: { contains: filters.search.trim() } },
+    ];
+  }
 
   if (filters?.startDate || filters?.endDate) {
     where.tanggalBuat = {};
@@ -273,7 +286,18 @@ export async function listForBidtekkom(
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
   const skip = (page - 1) * pageSize;
 
-  const where: any = {};
+  const where: Prisma.TicketWhereInput = {};
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.search?.trim()) {
+    where.OR = [
+      { judul: { contains: filters.search.trim() } },
+      { nomorTiket: { contains: filters.search.trim() } },
+    ];
+  }
   
   if (filters?.startDate || filters?.endDate) {
     where.tanggalBuat = {};
@@ -344,7 +368,18 @@ export async function listForPadal(
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
   const skip = (page - 1) * pageSize;
 
-  const where: any = { padalId };
+  const where: Prisma.TicketWhereInput = { padalId };
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.search?.trim()) {
+    where.OR = [
+      { judul: { contains: filters.search.trim() } },
+      { nomorTiket: { contains: filters.search.trim() } },
+    ];
+  }
 
   if (filters?.startDate || filters?.endDate) {
     where.tanggalBuat = {};
@@ -428,7 +463,18 @@ export async function listForTeknisi(
   }
 
   const skip = (page - 1) * pageSize;
-  const where: any = { padalId: teknisi.padalId };
+  const where: Prisma.TicketWhereInput = { padalId: teknisi.padalId };
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.search?.trim()) {
+    where.OR = [
+      { judul: { contains: filters.search.trim() } },
+      { nomorTiket: { contains: filters.search.trim() } },
+    ];
+  }
 
   if (filters?.startDate || filters?.endDate) {
     where.tanggalBuat = {};
@@ -868,6 +914,15 @@ export async function cancel(
   }
   // BIDTEKKOM: always allowed for PENDING/PROSES tickets
 
+  // 2.5. Validasi alasanBatal untuk Bidtekkom (TASK-006)
+  if (actorRole === 'BIDTEKKOM' && (!alasanBatal || !alasanBatal.trim())) {
+    throw new AppError(
+      400,
+      'REASON_REQUIRED',
+      'Bidtekkom wajib menyertakan alasan pembatalan tiket'
+    );
+  }
+
   // 3. Optimistic locking: updateMany with status WHERE clause
   const result = await prisma.ticket.updateMany({
     where: {
@@ -920,18 +975,20 @@ export async function cancel(
     },
   });
 
-  // 7. Notify creator Satker and assigned Padal (if exists) about cancellation (Req 7.6)
+  // 7. Notify creator Satker and assigned Padal (if exists) about cancellation (Req 7.6) (TASK-007)
   try {
-    // Notify the ticket creator
-    await notificationService.create({
-      userId: ticket.creatorId,
-      type: 'TICKET_CANCELLED',
-      ticketNumber: ticket.nomorTiket,
-      message: `Tiket ${ticket.nomorTiket} telah dibatalkan: ${ticket.judul}`,
-    });
+    // Notify the ticket creator only if they didn't cancel it themselves
+    if (ticket.creatorId !== actorId) {
+      await notificationService.create({
+        userId: ticket.creatorId,
+        type: 'TICKET_CANCELLED',
+        ticketNumber: ticket.nomorTiket,
+        message: `Tiket ${ticket.nomorTiket} telah dibatalkan: ${ticket.judul}`,
+      });
+    }
 
-    // Notify the assigned Padal if one exists
-    if (ticket.padalId) {
+    // Notify the assigned Padal if one exists and didn't cancel it
+    if (ticket.padalId && ticket.padalId !== actorId) {
       await notificationService.create({
         userId: ticket.padalId,
         type: 'TICKET_CANCELLED',
@@ -940,9 +997,9 @@ export async function cancel(
       });
     }
 
-    // Notify all Bidtekkom users about cancelled ticket
+    // Notify all Bidtekkom users EXCEPT the actor who cancelled (TASK-007)
     const bidtekkomUsers = await prisma.user.findMany({
-      where: { role: 'BIDTEKKOM', deletedAt: null },
+      where: { role: 'BIDTEKKOM', deletedAt: null, id: { not: actorId } },
       select: { id: true },
     });
 
@@ -958,6 +1015,114 @@ export async function cancel(
     );
   } catch {
     // Notification failure should not break cancellation
+  }
+
+  return updatedTicket;
+}
+
+// ─── Reject Ticket ───────────────────────────────────────────────────────────
+
+/**
+ * Reject a ticket (set status DITOLAK).
+ *
+ * Authorization:
+ * - BIDTEKKOM only (enforced at route level)
+ *
+ * Validates:
+ * 1. Ticket exists and status is PENDING
+ * 2. Reason is required
+ * 3. Uses optimistic locking via updateMany with status WHERE clause
+ * 4. Sets status DITOLAK and stores reason in alasanBatal
+ * 5. Logs audit event TICKET_REJECTION
+ */
+export async function reject(
+  ticketId: string,
+  actorId: string,
+  alasanTolak: string
+) {
+  const reason = alasanTolak.trim();
+  if (!reason) {
+    throw new AppError(400, 'REASON_REQUIRED', 'Alasan penolakan wajib diisi');
+  }
+
+  // 1. Get ticket and validate status is PENDING
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+  });
+
+  if (!ticket) {
+    throw new AppError(404, 'TICKET_NOT_FOUND', 'Tiket tidak ditemukan');
+  }
+
+  if (ticket.status !== 'PENDING') {
+    throw new AppError(
+      400,
+      'INVALID_STATUS',
+      'Tiket hanya bisa ditolak jika berstatus PENDING'
+    );
+  }
+
+  // 2. Optimistic locking: updateMany with status WHERE clause
+  const result = await prisma.ticket.updateMany({
+    where: {
+      id: ticketId,
+      status: 'PENDING',
+    },
+    data: {
+      status: 'DITOLAK',
+      alasanBatal: reason,
+    },
+  });
+
+  if (result.count === 0) {
+    throw new AppError(
+      409,
+      'CONFLICT',
+      'Tiket telah diubah oleh pengguna lain'
+    );
+  }
+
+  // 3. Fetch updated ticket to return
+  const updatedTicket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      creator: {
+        select: { id: true, nama: true, divisi: true },
+      },
+      padal: {
+        select: { id: true, nama: true },
+      },
+    },
+  });
+
+  // 4. Get actor info for audit log
+  const actor = await prisma.user.findUnique({
+    where: { id: actorId },
+    select: { nama: true },
+  });
+
+  // 5. Log audit event TICKET_REJECTION
+  await auditService.log({
+    eventType: 'TICKET_REJECTION',
+    actorId,
+    actorNama: actor?.nama ?? 'Unknown',
+    targetEntityId: ticket.nomorTiket,
+    metadata: {
+      ticketId: ticket.id,
+      alasanTolak: reason,
+    },
+  });
+
+  // 6. Notify creator about rejection
+  try {
+    await notificationService.create({
+      userId: ticket.creatorId,
+      type: 'TICKET_CANCELLED',
+      ticketNumber: ticket.nomorTiket,
+      message: `Tiket ${ticket.nomorTiket} ditolak oleh Bidtekkom: ${ticket.judul}`,
+    });
+  } catch {
+    // Notification failure should not break rejection
   }
 
   return updatedTicket;

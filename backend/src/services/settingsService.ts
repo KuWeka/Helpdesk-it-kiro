@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import * as auditService from './auditService';
 import { AppError } from '../utils/AppError';
 
-const prisma = new PrismaClient();
 
 /**
  * Default system settings returned when no record exists in the database.

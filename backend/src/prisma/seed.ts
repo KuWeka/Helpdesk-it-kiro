@@ -1,7 +1,7 @@
-import { PrismaClient, Role, TicketStatus, TicketCategory } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { Role, TicketStatus, TicketCategory } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 
 const DEFAULT_PASSWORD = 'Password123';
 const SALT_ROUNDS = 10;

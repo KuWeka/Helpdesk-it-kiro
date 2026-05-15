@@ -56,3 +56,15 @@ export function useCancelTicket() {
     },
   });
 }
+
+export function useRejectTicket() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, alasanTolak }: { id: string; alasanTolak: string }) =>
+      ticketApi.reject(id, { alasanTolak }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}

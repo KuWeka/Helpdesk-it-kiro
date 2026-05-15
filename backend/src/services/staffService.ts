@@ -1,10 +1,11 @@
+import { prisma } from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { PrismaClient, Role, Prisma } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import * as auditService from './auditService';
+import { invalidateCachedUser } from '../lib/authCache';
 
-const prisma = new PrismaClient();
 
 /**
  * Pagination parameters for staff queries.
@@ -326,6 +327,9 @@ export async function softDelete(
     where: { id: targetUserId },
     data: { deletedAt: new Date() },
   });
+
+  // Invalidate auth cache so user cannot make further authenticated requests
+  invalidateCachedUser(targetUserId);
 
   // Get actor info for audit log
   const actor = await prisma.user.findUnique({

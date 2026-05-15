@@ -1,8 +1,8 @@
-import { PrismaClient, TicketStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { TicketStatus, Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
 
-const prisma = new PrismaClient();
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -66,8 +66,8 @@ export async function getMonthlyReport(params: ReportParams): Promise<ReportData
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 1); // First day of next month
 
-  // Build where clause
-  const where: any = {
+  // Build where clause (TASK-008: Use Prisma type instead of any)
+  const where: Prisma.TicketWhereInput = {
     tanggalBuat: {
       gte: startDate,
       lt: endDate,

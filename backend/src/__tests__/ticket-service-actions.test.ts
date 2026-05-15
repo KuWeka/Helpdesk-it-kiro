@@ -29,7 +29,7 @@ jest.mock('../services/auditService', () => ({
   log: (...args: any[]) => mockAuditLog(...args),
 }));
 
-import { assignToPadal, markComplete, cancel } from '../services/ticketService';
+import { assignToPadal, markComplete, cancel, reject } from '../services/ticketService';
 
 describe('ticketService - assignToPadal', () => {
   beforeEach(() => {
@@ -322,7 +322,7 @@ describe('ticketService - cancel', () => {
     mockPrisma.ticket.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.user.findUnique.mockResolvedValue({ id: 'bidtekkom-1', nama: 'Bidtekkom User' });
 
-    const result = await cancel('ticket-2', 'bidtekkom-1', 'BIDTEKKOM');
+    const result = await cancel('ticket-2', 'bidtekkom-1', 'BIDTEKKOM', 'Sistem error');
 
     expect(result).toBeDefined();
   });
@@ -378,6 +378,83 @@ describe('ticketService - cancel', () => {
 
     try {
       await cancel('ticket-1', 'satker-1', 'SATKER');
+    } catch (err: any) {
+      expect(err.statusCode).toBe(409);
+      expect(err.code).toBe('CONFLICT');
+    }
+  });
+});
+
+describe('ticketService - reject', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const pendingTicket = {
+    id: 'ticket-1',
+    nomorTiket: 'TIK-2025-0001',
+    status: 'PENDING',
+    creatorId: 'satker-1',
+    padalId: null,
+  };
+
+  it('should reject a PENDING ticket with a mandatory reason', async () => {
+    mockPrisma.ticket.findUnique
+      .mockResolvedValueOnce(pendingTicket)
+      .mockResolvedValueOnce({ ...pendingTicket, status: 'DITOLAK', alasanBatal: 'Data tiket tidak valid' });
+    mockPrisma.ticket.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'bidtekkom-1', nama: 'Bidtekkom User' });
+
+    const result = await reject('ticket-1', 'bidtekkom-1', 'Data tiket tidak valid');
+
+    expect(mockPrisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ticket-1', status: 'PENDING' },
+      data: expect.objectContaining({
+        status: 'DITOLAK',
+        alasanBatal: 'Data tiket tidak valid',
+      }),
+    });
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'TICKET_REJECTION',
+        actorId: 'bidtekkom-1',
+      })
+    );
+    expect(result).toBeDefined();
+  });
+
+  it('should throw 400 when reason is empty', async () => {
+    await expect(reject('ticket-1', 'bidtekkom-1', '   ')).rejects.toThrow(AppError);
+  });
+
+  it('should throw 404 if ticket not found', async () => {
+    mockPrisma.ticket.findUnique.mockResolvedValue(null);
+
+    try {
+      await reject('nonexistent', 'bidtekkom-1', 'Invalid ticket');
+    } catch (err: any) {
+      expect(err.statusCode).toBe(404);
+      expect(err.code).toBe('TICKET_NOT_FOUND');
+    }
+  });
+
+  it('should throw 400 if ticket is not PENDING', async () => {
+    mockPrisma.ticket.findUnique.mockResolvedValue({ ...pendingTicket, status: 'PROSES' });
+
+    try {
+      await reject('ticket-1', 'bidtekkom-1', 'Tidak valid');
+    } catch (err: any) {
+      expect(err.statusCode).toBe(400);
+      expect(err.code).toBe('INVALID_STATUS');
+    }
+  });
+
+  it('should throw 409 CONFLICT on optimistic locking failure', async () => {
+    mockPrisma.ticket.findUnique.mockResolvedValue(pendingTicket);
+    mockPrisma.ticket.updateMany.mockResolvedValue({ count: 0 });
+
+    try {
+      await reject('ticket-1', 'bidtekkom-1', 'Tidak valid');
     } catch (err: any) {
       expect(err.statusCode).toBe(409);
       expect(err.code).toBe('CONFLICT');

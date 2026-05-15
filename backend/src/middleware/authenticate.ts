@@ -1,9 +1,9 @@
+import { prisma } from '../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { JwtUserPayload } from '../types/express';
+import { getCachedUserStatus, setCachedUserStatus } from '../lib/authCache';
 
-const prisma = new PrismaClient();
 
 /**
  * JWT Authentication Middleware.
@@ -53,28 +53,47 @@ export const authenticate = async (
 
     const decoded = jwt.verify(token, jwtSecret) as JwtUserPayload;
 
-    // Check that user exists and is not soft-deleted
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, deletedAt: true },
-    });
+    // Check cache first to avoid DB query on every request
+    const cachedStatus = getCachedUserStatus(decoded.userId);
 
-    if (!user) {
-      res.status(401).json({
-        status: 'error',
-        code: 'UNAUTHORIZED',
-        message: 'User tidak ditemukan',
-      });
-      return;
-    }
-
-    if (user.deletedAt !== null) {
+    if (cachedStatus === false) {
+      // Cached as inactive (soft-deleted)
       res.status(401).json({
         status: 'error',
         code: 'UNAUTHORIZED',
         message: 'Akun telah dinonaktifkan',
       });
       return;
+    }
+
+    if (cachedStatus === null) {
+      // Cache miss — query DB and cache result
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, deletedAt: true },
+      });
+
+      if (!user) {
+        setCachedUserStatus(decoded.userId, false);
+        res.status(401).json({
+          status: 'error',
+          code: 'UNAUTHORIZED',
+          message: 'User tidak ditemukan',
+        });
+        return;
+      }
+
+      const isActive = user.deletedAt === null;
+      setCachedUserStatus(decoded.userId, isActive);
+
+      if (!isActive) {
+        res.status(401).json({
+          status: 'error',
+          code: 'UNAUTHORIZED',
+          message: 'Akun telah dinonaktifkan',
+        });
+        return;
+      }
     }
 
     // Attach decoded payload to request
