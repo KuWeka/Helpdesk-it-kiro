@@ -546,7 +546,7 @@
 
 ### 🟡 TASK-016 — Konsistensi Penggunaan TanStack Query
 
-**Masalah:** Beberapa page menggunakan TanStack Query (via hooks di `hooks/useTickets.ts`) tapi beberapa page lain menggunakan `useState + useEffect + fetch` manual (dashboard/page.tsx, tickets/page.tsx). Ini inkonsisten dan menyulitkan maintenance.
+**Masalah:** Beberapa page menggunakan TanStack Query (via hooks di `hooks/useTickets.ts`) tapi beberapa page lain menggunakan `useState + useEffect + fetch` manual. Ini inkonsisten dan menyulitkan maintenance.
 
 **Langkah pengerjaan:**
 
@@ -555,6 +555,10 @@
   - `dashboard/page.tsx` (SatkerDashboard, dll — masih manual useState)
   - `audit-log/page.tsx`
   - `notifications/page.tsx`
+- [ ] Migrasi page yang masih menggunakan manual fetch:
+  - `tickets/page.tsx` — masih pakai `fetchTickets` manual via `useCallback + useEffect` (hook `useTickets` sudah ada tapi tidak dipakai)
+  - `staff/page.tsx` — masih pakai `fetchUsers` manual via `useCallback + useEffect` (hook `useStaff` sudah ada tapi tidak dipakai)
+  - `teams/page.tsx` — masih pakai manual `useEffect`
 - [x] Untuk setiap migrasi, tambahkan hook baru di file hooks yang relevan (`useAudit.ts`, `useNotifications.ts`, dll)
 - [x] Pastikan `staleTime` yang reasonable dikonfigurasi (contoh: `staleTime: 30_000` untuk dashboard data)
 - [x] Tambahkan `onError` callback yang konsisten di semua query
@@ -871,7 +875,7 @@ Sebelum dinyatakan production-ready, pastikan semua checklist berikut terpenuhi:
 - [x] Search tiket berfungsi cross-page (tidak hanya filter client-side)
 - [x] Soft-delete user: user yang dihapus tidak bisa login
 - [x] Export PDF dan Excel laporan bulanan berfungsi
-- [ ] Audit log mencatat semua event yang seharusnya
+- [x] Audit log mencatat semua event yang seharusnya
 
 ---
 
