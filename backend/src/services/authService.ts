@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { AppError } from '../utils/AppError';
 import { JwtUserPayload } from '../types/express';
 import { sendPasswordResetEmail } from './emailService';
+import * as auditService from './auditService';
 
 
 interface RegisterData {
@@ -59,6 +60,16 @@ export async function register(data: RegisterData): Promise<{ userId: string }> 
     },
   });
 
+  await auditService.log({
+    eventType: 'REGISTRATION',
+    actorId: user.id,
+    actorNama: user.nama,
+    targetEntityId: user.email,
+    metadata: {
+      role: user.role,
+    },
+  });
+
   return { userId: user.id };
 }
 
@@ -105,6 +116,16 @@ export async function login(data: LoginData): Promise<LoginResult> {
   };
 
   const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+
+  await auditService.log({
+    eventType: 'LOGIN',
+    actorId: user.id,
+    actorNama: user.nama,
+    targetEntityId: user.email,
+    metadata: {
+      role: user.role,
+    },
+  });
 
   return {
     token,
@@ -199,6 +220,16 @@ export async function resetPassword(token: string, newPassword: string): Promise
       password: hashedPassword,
       passwordResetToken: null,
       passwordResetExpires: null,
+    },
+  });
+
+  await auditService.log({
+    eventType: 'PASSWORD_RESET',
+    actorId: user.id,
+    actorNama: user.nama,
+    targetEntityId: user.email,
+    metadata: {
+      source: 'SELF_SERVICE_RESET',
     },
   });
 }

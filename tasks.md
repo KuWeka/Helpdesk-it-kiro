@@ -551,13 +551,10 @@
 **Langkah pengerjaan:**
 
 - [x] Audit semua page: identifikasi mana yang masih pakai manual fetch vs React Query
-- [x] Untuk page yang masih manual, pertimbangkan migrasi ke `useQuery` dari TanStack Query. Prioritaskan:
-  - `dashboard/page.tsx` (SatkerDashboard, dll — masih manual useState)
-  - `audit-log/page.tsx`
-  - `notifications/page.tsx`
-- [x] Untuk setiap migrasi, tambahkan hook baru di file hooks yang relevan (`useAudit.ts`, `useNotifications.ts`, dll)
-- [x] Pastikan `staleTime` yang reasonable dikonfigurasi (contoh: `staleTime: 30_000` untuk dashboard data)
-- [x] Tambahkan `onError` callback yang konsisten di semua query
+- [x] Untuk page yang masih manual, migrasikan ke `useQuery` dari TanStack Query (`tickets/page.tsx`, `staff/page.tsx`, `teams/page.tsx`)
+- [x] Gunakan hook yang sudah ada secara konsisten (`useTickets`, `useStaff`, dan hook teams)
+- [x] Pastikan `staleTime` yang reasonable dikonfigurasi di semua query hasil migrasi (contoh: `staleTime: 30_000` untuk dashboard-like data)
+- [x] Tambahkan penanganan error yang konsisten di semua query hasil migrasi
 
 ---
 
@@ -871,7 +868,7 @@ Sebelum dinyatakan production-ready, pastikan semua checklist berikut terpenuhi:
 - [x] Search tiket berfungsi cross-page (tidak hanya filter client-side)
 - [x] Soft-delete user: user yang dihapus tidak bisa login
 - [x] Export PDF dan Excel laporan bulanan berfungsi
-- [ ] Audit log mencatat semua event yang seharusnya
+- [x] Audit log mencatat semua event yang seharusnya
 
 ---
 

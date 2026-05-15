@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Users, UserPlus, UserMinus, Phone } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { staffApi } from "@/lib/api";
+import {
+  useAddTeknisiToTeam,
+  useAvailableTeknisi,
+  useRemoveTeknisiFromTeam,
+  useTeams,
+} from "@/hooks/useStaff";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
@@ -47,15 +52,8 @@ export default function TeamManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // State
-  const [teams, setTeams] = useState<PadalTeam[]>([]);
-  const [availableTeknisi, setAvailableTeknisi] = useState<AvailableTeknisi[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Add Teknisi state (per Padal)
   const [selectedTeknisi, setSelectedTeknisi] = useState<Record<string, string>>({});
-  const [addingToPadal, setAddingToPadal] = useState<string | null>(null);
 
   // Remove confirmation dialog state
   const [removeDialog, setRemoveDialog] = useState<{
@@ -71,36 +69,23 @@ export default function TeamManagementPage() {
     teknisiNama: "",
     padalNama: "",
   });
-  const [isRemoving, setIsRemoving] = useState(false);
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
+  const teamsQuery = useTeams({
+    enabled: !authLoading && !!user,
+    staleTime: 30_000,
+  });
 
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const availableTeknisiQuery = useAvailableTeknisi({
+    enabled: !authLoading && !!user,
+    staleTime: 30_000,
+  });
 
-      const [teamsRes, teknisiRes] = await Promise.all([
-        staffApi.getTeams(),
-        staffApi.getAvailableTeknisi(),
-      ]);
+  const addTeknisiMutation = useAddTeknisiToTeam();
+  const removeTeknisiMutation = useRemoveTeknisiFromTeam();
 
-      setTeams(teamsRes.data.data || []);
-      setAvailableTeknisi(teknisiRes.data.data || []);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat data tim";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchData();
-    }
-  }, [authLoading, user, fetchData]);
+  const teams = (teamsQuery.data as PadalTeam[] | undefined) ?? [];
+  const availableTeknisi =
+    (availableTeknisiQuery.data as AvailableTeknisi[] | undefined) ?? [];
 
   // ─── Add Teknisi Handler ────────────────────────────────────────────────────
 
@@ -108,18 +93,17 @@ export default function TeamManagementPage() {
     const teknisiId = selectedTeknisi[padalId];
     if (!teknisiId) return;
 
-    setAddingToPadal(padalId);
     try {
-      await staffApi.addTeknisi(padalId, { teknisiId });
+      await addTeknisiMutation.mutateAsync({ padalId, teknisiId });
       toast({
         title: "Berhasil",
         description: "Teknisi berhasil ditambahkan ke tim.",
       });
-      // Clear selection and refresh data
       setSelectedTeknisi((prev) => ({ ...prev, [padalId]: "" }));
-      await fetchData();
     } catch (err: unknown) {
-      const axiosError = err as { response?: { status?: number; data?: { message?: string } } };
+      const axiosError = err as {
+        response?: { status?: number; data?: { message?: string } };
+      };
       if (axiosError.response?.status === 409) {
         toast({
           title: "Konflik",
@@ -137,8 +121,6 @@ export default function TeamManagementPage() {
           variant: "destructive",
         });
       }
-    } finally {
-      setAddingToPadal(null);
     }
   };
 
@@ -160,15 +142,16 @@ export default function TeamManagementPage() {
   };
 
   const handleRemoveTeknisi = async () => {
-    setIsRemoving(true);
     try {
-      await staffApi.removeTeknisi(removeDialog.padalId, removeDialog.teknisiId);
+      await removeTeknisiMutation.mutateAsync({
+        padalId: removeDialog.padalId,
+        teknisiId: removeDialog.teknisiId,
+      });
       toast({
         title: "Berhasil",
         description: `${removeDialog.teknisiNama} berhasil dilepas dari tim.`,
       });
       setRemoveDialog((prev) => ({ ...prev, open: false }));
-      await fetchData();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       toast({
@@ -178,14 +161,16 @@ export default function TeamManagementPage() {
           "Gagal melepas Teknisi dari tim.",
         variant: "destructive",
       });
-    } finally {
-      setIsRemoving(false);
     }
   };
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
-  if (authLoading || (isLoading && teams.length === 0)) {
+  if (
+    authLoading ||
+    (teamsQuery.isLoading && teams.length === 0) ||
+    availableTeknisiQuery.isLoading
+  ) {
     return (
       <div className="space-y-6 p-6">
         <div>
@@ -202,14 +187,24 @@ export default function TeamManagementPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (teamsQuery.error || availableTeknisiQuery.error) {
+    const teamsErrorMessage =
+      (teamsQuery.error as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+    const teknisiErrorMessage =
+      (availableTeknisiQuery.error as {
+        response?: { data?: { message?: string } };
+      })?.response?.data?.message;
+
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Manajemen Tim</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">
+            {teamsErrorMessage || teknisiErrorMessage || "Gagal memuat data tim"}
+          </p>
         </div>
       </div>
     );
@@ -336,12 +331,12 @@ export default function TeamManagementPage() {
                   className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0"
                   disabled={
                     !selectedTeknisi[padal.id] ||
-                    addingToPadal === padal.id
+                    addTeknisiMutation.isPending
                   }
                   onClick={() => handleAddTeknisi(padal.id)}
                 >
                   <UserPlus className="h-4 w-4 mr-1" />
-                  {addingToPadal === padal.id ? "Menambahkan..." : "Tambah"}
+                  {addTeknisiMutation.isPending ? "Menambahkan..." : "Tambah"}
                 </Button>
               </div>
             </CardContent>
@@ -368,7 +363,7 @@ export default function TeamManagementPage() {
         confirmLabel="Ya, Lepas"
         cancelLabel="Batal"
         onConfirm={handleRemoveTeknisi}
-        isLoading={isRemoving}
+        isLoading={removeTeknisiMutation.isPending}
         variant="destructive"
       />
     </div>

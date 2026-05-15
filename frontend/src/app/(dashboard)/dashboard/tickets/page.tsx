@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useReactTable,
@@ -11,8 +11,8 @@ import {
 } from "@tanstack/react-table";
 import { Ticket, Eye, ChevronLeft, ChevronRight, XCircle, UserPlus, CheckCircle2, Search } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { ticketApi } from "@/lib/api";
 import { formatDate } from "@/lib/formatters";
+import { useCompleteTicket, useTickets } from "@/hooks/useTickets";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
 import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
@@ -78,10 +78,6 @@ export default function TicketListPage() {
   const { toast } = useToast();
 
   // State
-  const [data, setData] = useState<TicketRow[]>([]);
-  const [totalRows, setTotalRows] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") || "ALL"
   );
@@ -118,62 +114,56 @@ export default function TicketListPage() {
     ticketId: string;
     ticketNumber: string;
   }>({ open: false, ticketId: "", ticketNumber: "" });
-  const [isCompleting, setIsCompleting] = useState(false);
+  const ticketsQueryParams = useMemo(() => {
+    const params: Record<string, string | number> = {
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+    };
 
-  // Fetch tickets
-  const fetchTickets = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const params: Record<string, string | number> = {
-        page: pagination.pageIndex + 1,
-        pageSize: pagination.pageSize,
-      };
-
-      if (statusFilter && statusFilter !== "ALL") {
-        params.status = statusFilter;
-      }
-
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-
-      if (unratedFilter) {
-        params.unrated = "true";
-      }
-
-      if (startDate) {
-        params.startDate = startDate;
-      }
-
-      if (endDate) {
-        params.endDate = endDate;
-      }
-
-      const response = await ticketApi.list(params);
-      const resData = response.data;
-
-      // Handle response format: { status, data: [...], pagination: { totalItems } }
-      const tickets = Array.isArray(resData.data) ? resData.data : [];
-      const total = resData.pagination?.totalItems ?? tickets.length;
-
-      setData(tickets);
-      setTotalRows(total);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat daftar tiket";
-      setError(message);
-    } finally {
-      setIsLoading(false);
+    if (statusFilter && statusFilter !== "ALL") {
+      params.status = statusFilter;
     }
-  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter, startDate, endDate]);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchTickets();
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
     }
-  }, [authLoading, user, fetchTickets]);
+
+    if (unratedFilter) {
+      params.unrated = "true";
+    }
+
+    if (startDate) {
+      params.startDate = startDate;
+    }
+
+    if (endDate) {
+      params.endDate = endDate;
+    }
+
+    return params;
+  }, [
+    endDate,
+    pagination.pageIndex,
+    pagination.pageSize,
+    searchQuery,
+    startDate,
+    statusFilter,
+    unratedFilter,
+  ]);
+
+  const {
+    data: ticketsResult,
+    isLoading,
+    error,
+    refetch,
+  } = useTickets(ticketsQueryParams, {
+    enabled: !authLoading && !!user,
+    staleTime: 30_000,
+  });
+
+  const completeTicketMutation = useCompleteTicket();
+  const data = ticketsResult?.data ?? [];
+  const totalRows = ticketsResult?.pagination?.totalItems ?? data.length;
 
   // Navigate to ticket detail
   const handleViewDetail = (id: string) => {
@@ -195,15 +185,14 @@ export default function TicketListPage() {
   };
 
   const handleConfirmComplete = async () => {
-    setIsCompleting(true);
     try {
-      await ticketApi.complete(completeModal.ticketId);
+      await completeTicketMutation.mutateAsync(completeModal.ticketId);
       toast({
         title: "Berhasil",
         description: `Tiket ${completeModal.ticketNumber} berhasil diselesaikan.`,
       });
       setCompleteModal({ open: false, ticketId: "", ticketNumber: "" });
-      fetchTickets();
+      refetch();
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -213,17 +202,15 @@ export default function TicketListPage() {
         description: message,
         variant: "destructive",
       });
-    } finally {
-      setIsCompleting(false);
     }
   };
 
   const handleCancelled = () => {
-    fetchTickets();
+    refetch();
   };
 
   const handleAssigned = () => {
-    fetchTickets();
+    refetch();
   };
 
   // ─── Column Definitions (Role-Specific) ──────────────────────────────────
@@ -485,13 +472,17 @@ export default function TicketListPage() {
   // ─── Error State ────────────────────────────────────────────────────────────
 
   if (error) {
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message || "Gagal memuat daftar tiket";
+
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Daftar Tiket</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">{errorMessage}</p>
         </div>
       </div>
     );
@@ -724,7 +715,7 @@ export default function TicketListPage() {
         }
         confirmLabel="Ya, Selesaikan"
         onConfirm={handleConfirmComplete}
-        isLoading={isCompleting}
+        isLoading={completeTicketMutation.isPending}
       />
     </div>
   );

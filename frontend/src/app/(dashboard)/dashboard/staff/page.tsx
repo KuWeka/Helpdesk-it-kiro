@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Users, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
   useReactTable,
@@ -9,7 +9,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { useAuth } from "@/providers/AuthProvider";
-import { staffApi } from "@/lib/api";
+import { useChangeRole, useSoftDelete, useStaffUsers } from "@/hooks/useStaff";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
@@ -78,21 +78,12 @@ export default function StaffManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // Data state
-  const [users, setUsers] = useState<StaffUser[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    pageSize: 20,
-    totalItems: 0,
-    totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Filter state
+  // Filter + pagination state
   const [searchQuery, setSearchQuery] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Role change confirmation state
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -108,7 +99,6 @@ export default function StaffManagementPage() {
     currentRole: "SATKER",
     newRole: "SATKER",
   });
-  const [isChangingRole, setIsChangingRole] = useState(false);
 
   // Delete confirmation state
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -120,7 +110,6 @@ export default function StaffManagementPage() {
     userId: "",
     userName: "",
   });
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Active ticket warning modal state
   const [activeTicketWarning, setActiveTicketWarning] = useState<{
@@ -135,47 +124,40 @@ export default function StaffManagementPage() {
     activeTicketCount: 0,
   });
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
+  const queryParams = useMemo(() => {
+    const params: Record<string, string | number> = {
+      page: currentPage,
+      pageSize: 20,
+    };
 
-  const fetchUsers = useCallback(
-    async (page: number = 1) => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    if (appliedSearch.trim()) params.search = appliedSearch.trim();
+    if (roleFilter !== "all") params.role = roleFilter;
+    if (statusFilter !== "all") params.status = statusFilter;
 
-        const params: Record<string, string | number> = { page };
-        if (searchQuery.trim()) params.search = searchQuery.trim();
-        if (roleFilter !== "all") params.role = roleFilter;
-        if (statusFilter !== "all") params.status = statusFilter;
+    return params;
+  }, [appliedSearch, currentPage, roleFilter, statusFilter]);
 
-        const response = await staffApi.listUsers(params);
-        const data = response.data;
+  const {
+    data: staffResult,
+    isLoading,
+    error,
+    refetch,
+  } = useStaffUsers(queryParams, {
+    enabled: !authLoading && !!user,
+    staleTime: 30_000,
+  });
 
-        setUsers(data.data || []);
-        setPagination(
-          data.pagination || {
-            page: 1,
-            pageSize: 20,
-            totalItems: 0,
-            totalPages: 0,
-          }
-        );
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Gagal memuat data staff";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchQuery, roleFilter, statusFilter]
-  );
+  const users = (staffResult?.data as StaffUser[] | undefined) ?? [];
+  const pagination: PaginationInfo =
+    (staffResult?.pagination as PaginationInfo | undefined) ?? {
+      page: currentPage,
+      pageSize: 20,
+      totalItems: 0,
+      totalPages: 0,
+    };
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchUsers(1);
-    }
-  }, [authLoading, user, fetchUsers]);
+  const changeRoleMutation = useChangeRole();
+  const softDeleteMutation = useSoftDelete();
 
   // ─── Role Change Handlers ───────────────────────────────────────────────────
 
@@ -197,9 +179,9 @@ export default function StaffManagementPage() {
   };
 
   const handleConfirmRoleChange = async () => {
-    setIsChangingRole(true);
     try {
-      await staffApi.changeRole(roleChangeModal.userId, {
+      await changeRoleMutation.mutateAsync({
+        userId: roleChangeModal.userId,
         role: roleChangeModal.newRole,
       });
 
@@ -209,8 +191,7 @@ export default function StaffManagementPage() {
       });
 
       setRoleChangeModal((prev) => ({ ...prev, open: false }));
-      // Refresh the table data
-      await fetchUsers(pagination.page);
+      refetch();
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { message?: string } };
@@ -221,8 +202,6 @@ export default function StaffManagementPage() {
           axiosError.response?.data?.message || "Gagal mengubah role user.",
         variant: "destructive",
       });
-    } finally {
-      setIsChangingRole(false);
     }
   };
 
@@ -233,9 +212,8 @@ export default function StaffManagementPage() {
   };
 
   const handleConfirmDelete = async () => {
-    setIsDeleting(true);
     try {
-      await staffApi.softDelete(deleteConfirmModal.userId);
+      await softDeleteMutation.mutateAsync({ userId: deleteConfirmModal.userId });
 
       toast({
         title: "Berhasil",
@@ -243,18 +221,16 @@ export default function StaffManagementPage() {
       });
 
       setDeleteConfirmModal((prev) => ({ ...prev, open: false }));
-      await fetchUsers(pagination.page);
+      refetch();
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { code?: string; message?: string; details?: { activeTicketCount?: number } } };
       };
 
-      // Check if the error is HAS_ACTIVE_TICKETS
       if (axiosError.response?.data?.code === "HAS_ACTIVE_TICKETS") {
         const activeTicketCount =
           axiosError.response.data.details?.activeTicketCount || 0;
 
-        // Close the confirm modal and show the active ticket warning
         setDeleteConfirmModal((prev) => ({ ...prev, open: false }));
         setActiveTicketWarning({
           isOpen: true,
@@ -271,14 +247,13 @@ export default function StaffManagementPage() {
           variant: "destructive",
         });
       }
-    } finally {
-      setIsDeleting(false);
     }
   };
 
   const handleForceDelete = async () => {
     try {
-      await staffApi.softDelete(activeTicketWarning.userId, {
+      await softDeleteMutation.mutateAsync({
+        userId: activeTicketWarning.userId,
         forceDelete: true,
       });
 
@@ -288,7 +263,7 @@ export default function StaffManagementPage() {
       });
 
       setActiveTicketWarning((prev) => ({ ...prev, isOpen: false }));
-      await fetchUsers(pagination.page);
+      refetch();
     } catch (err: unknown) {
       const axiosError = err as {
         response?: { data?: { message?: string } };
@@ -307,13 +282,13 @@ export default function StaffManagementPage() {
 
   const handlePrevPage = () => {
     if (pagination.page > 1) {
-      fetchUsers(pagination.page - 1);
+      setCurrentPage((prev) => Math.max(1, prev - 1));
     }
   };
 
   const handleNextPage = () => {
     if (pagination.page < pagination.totalPages) {
-      fetchUsers(pagination.page + 1);
+      setCurrentPage((prev) => prev + 1);
     }
   };
 
@@ -321,7 +296,8 @@ export default function StaffManagementPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchUsers(1);
+    setCurrentPage(1);
+    setAppliedSearch(searchQuery);
   };
 
   // ─── Column Definitions ─────────────────────────────────────────────────────
@@ -467,13 +443,17 @@ export default function StaffManagementPage() {
   // ─── Error State ────────────────────────────────────────────────────────────
 
   if (error) {
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message || "Gagal memuat data staff";
+
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Manajemen Staff</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">{errorMessage}</p>
         </div>
       </div>
     );
@@ -509,7 +489,13 @@ export default function StaffManagementPage() {
         </form>
 
         <div className="flex gap-2">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select
+            value={roleFilter}
+            onValueChange={(value) => {
+              setCurrentPage(1);
+              setRoleFilter(value);
+            }}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Semua Role" />
             </SelectTrigger>
@@ -523,7 +509,13 @@ export default function StaffManagementPage() {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setCurrentPage(1);
+              setStatusFilter(value);
+            }}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Semua Status" />
             </SelectTrigger>
@@ -638,7 +630,7 @@ export default function StaffManagementPage() {
         }
         confirmLabel="Ya, Ubah Role"
         onConfirm={handleConfirmRoleChange}
-        isLoading={isChangingRole}
+        isLoading={changeRoleMutation.isPending}
       />
 
       {/* Delete Confirmation Modal */}
@@ -659,7 +651,7 @@ export default function StaffManagementPage() {
         }
         confirmLabel="Ya, Nonaktifkan"
         onConfirm={handleConfirmDelete}
-        isLoading={isDeleting}
+        isLoading={softDeleteMutation.isPending}
         variant="destructive"
       />
 

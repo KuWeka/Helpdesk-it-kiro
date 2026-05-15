@@ -1,13 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketApi } from '@/lib/api';
 
-export function useTickets(params?: Record<string, string | number>) {
+interface UseTicketsOptions {
+  enabled?: boolean;
+  staleTime?: number;
+}
+
+export function useTickets(
+  params?: Record<string, string | number>,
+  options?: UseTicketsOptions
+) {
   return useQuery({
     queryKey: ['tickets', params],
     queryFn: async () => {
       const res = await ticketApi.list(params);
       return { data: res.data.data || [], pagination: res.data.pagination };
     },
+    enabled: options?.enabled ?? true,
+    staleTime: options?.staleTime ?? 30_000,
   });
 }
 
