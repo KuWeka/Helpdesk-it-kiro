@@ -33,6 +33,7 @@ dupe component/
 
 # Documents (local notes)
 documents/
+tasks.md
 
 # Prisma
 backend/src/prisma/migrations/**/migration_lock.toml

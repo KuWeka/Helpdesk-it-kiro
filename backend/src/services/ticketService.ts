@@ -1,5 +1,11 @@
 import { prisma } from '../lib/prisma';
-import { TicketCategory, Role, Prisma, TicketStatus } from '@prisma/client';
+import {
+  TicketCategory,
+  Role,
+  Prisma,
+  TicketStatus,
+  AuditEventType,
+} from '@prisma/client';
 import { AppError } from '../utils/AppError';
 import { generateTicketNumber } from '../utils/ticketNumber';
 import { generateUniqueFilename } from '../utils/fileNaming';
@@ -1076,7 +1082,7 @@ export async function reject(
       status: 'PENDING',
     },
     data: {
-      status: 'DITOLAK',
+      status: 'DITOLAK' as unknown as TicketStatus,
       alasanBatal: reason,
     },
   });
@@ -1110,7 +1116,7 @@ export async function reject(
 
   // 5. Log audit event TICKET_REJECTION
   await auditService.log({
-    eventType: 'TICKET_REJECTION',
+    eventType: 'TICKET_REJECTION' as unknown as AuditEventType,
     actorId,
     actorNama: actor?.nama ?? 'Unknown',
     targetEntityId: ticket.nomorTiket,

@@ -6,15 +6,15 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "5.0",
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["shared/*"],
-      "@shared/types": ["shared/types/index.ts"],
-      "@shared/types/*": ["shared/types/*"],
-      "@shared/constants": ["shared/constants/index.ts"],
-      "@shared/constants/*": ["shared/constants/*"]
+      "@shared/*": ["./shared/*"],
+      "@shared/types": ["./shared/types/index.ts"],
+      "@shared/types/*": ["./shared/types/*"],
+      "@shared/constants": ["./shared/constants/index.ts"],
+      "@shared/constants/*": ["./shared/constants/*"]
     }
   },
   "include": ["shared/**/*"],
