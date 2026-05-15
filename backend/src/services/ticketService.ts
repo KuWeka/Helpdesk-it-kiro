@@ -21,8 +21,10 @@ export interface PaginationParams {
   pageSize?: number;
 }
 
-export interface SatkerFilters {
+export interface TicketFilters {
   unrated?: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -189,7 +191,7 @@ export async function create(
 export async function listForSatker(
   userId: string,
   pagination: PaginationParams = {},
-  filters?: SatkerFilters
+  filters?: TicketFilters
 ): Promise<PaginatedResult<any>> {
   const page = pagination.page && pagination.page > 0 ? pagination.page : 1;
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
@@ -199,6 +201,16 @@ export async function listForSatker(
   const where: any = {
     creatorId: userId,
   };
+
+  if (filters?.startDate || filters?.endDate) {
+    where.tanggalBuat = {};
+    if (filters.startDate) where.tanggalBuat.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.tanggalBuat.lte = end;
+    }
+  }
 
   // Support unrated=true filter (Req 26.1-26.4)
   if (filters?.unrated) {
@@ -254,15 +266,29 @@ export async function listForSatker(
  * Includes creator relation (nama).
  */
 export async function listForBidtekkom(
-  pagination: PaginationParams = {}
+  pagination: PaginationParams = {},
+  filters?: TicketFilters
 ): Promise<PaginatedResult<any>> {
   const page = pagination.page && pagination.page > 0 ? pagination.page : 1;
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
   const skip = (page - 1) * pageSize;
 
+  const where: any = {};
+  
+  if (filters?.startDate || filters?.endDate) {
+    where.tanggalBuat = {};
+    if (filters.startDate) where.tanggalBuat.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.tanggalBuat.lte = end;
+    }
+  }
+
   const [totalItems, data] = await Promise.all([
-    prisma.ticket.count(),
+    prisma.ticket.count({ where }),
     prisma.ticket.findMany({
+      where,
       orderBy: { tanggalBuat: 'desc' },
       skip,
       take: pageSize,
@@ -311,13 +337,24 @@ export async function listForBidtekkom(
  */
 export async function listForPadal(
   padalId: string,
-  pagination: PaginationParams = {}
+  pagination: PaginationParams = {},
+  filters?: TicketFilters
 ): Promise<PaginatedResult<any>> {
   const page = pagination.page && pagination.page > 0 ? pagination.page : 1;
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
   const skip = (page - 1) * pageSize;
 
-  const where = { padalId };
+  const where: any = { padalId };
+
+  if (filters?.startDate || filters?.endDate) {
+    where.tanggalBuat = {};
+    if (filters.startDate) where.tanggalBuat.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.tanggalBuat.lte = end;
+    }
+  }
 
   const [totalItems, data] = await Promise.all([
     prisma.ticket.count({ where }),
@@ -365,7 +402,8 @@ export async function listForPadal(
  */
 export async function listForTeknisi(
   teknisiId: string,
-  pagination: PaginationParams = {}
+  pagination: PaginationParams = {},
+  filters?: TicketFilters
 ): Promise<PaginatedResult<any>> {
   const page = pagination.page && pagination.page > 0 ? pagination.page : 1;
   const pageSize = pagination.pageSize && pagination.pageSize > 0 ? pagination.pageSize : 20;
@@ -390,7 +428,17 @@ export async function listForTeknisi(
   }
 
   const skip = (page - 1) * pageSize;
-  const where = { padalId: teknisi.padalId };
+  const where: any = { padalId: teknisi.padalId };
+
+  if (filters?.startDate || filters?.endDate) {
+    where.tanggalBuat = {};
+    if (filters.startDate) where.tanggalBuat.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.tanggalBuat.lte = end;
+    }
+  }
 
   const [totalItems, data] = await Promise.all([
     prisma.ticket.count({ where }),

@@ -54,23 +54,27 @@ export async function listTickets(
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
     const pagination = { page, pageSize };
+    const filters = {
+      unrated: req.query.unrated === 'true',
+      startDate: req.query.startDate as string | undefined,
+      endDate: req.query.endDate as string | undefined,
+    };
 
     let result;
 
     switch (role) {
       case 'SATKER': {
-        const unrated = req.query.unrated === 'true';
-        result = await ticketService.listForSatker(userId, pagination, { unrated });
+        result = await ticketService.listForSatker(userId, pagination, filters);
         break;
       }
       case 'BIDTEKKOM':
-        result = await ticketService.listForBidtekkom(pagination);
+        result = await ticketService.listForBidtekkom(pagination, filters);
         break;
       case 'PADAL':
-        result = await ticketService.listForPadal(userId, pagination);
+        result = await ticketService.listForPadal(userId, pagination, filters);
         break;
       case 'TEKNISI':
-        result = await ticketService.listForTeknisi(userId, pagination);
+        result = await ticketService.listForTeknisi(userId, pagination, filters);
         break;
       default:
         throw new AppError(403, 'FORBIDDEN', 'Role tidak dikenali');

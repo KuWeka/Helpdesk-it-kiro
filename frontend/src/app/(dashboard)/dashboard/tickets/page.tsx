@@ -94,6 +94,8 @@ export default function TicketListPage() {
     searchParams.get("status") || "ALL"
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
@@ -149,6 +151,14 @@ export default function TicketListPage() {
         params.unrated = "true";
       }
 
+      if (startDate) {
+        params.startDate = startDate;
+      }
+
+      if (endDate) {
+        params.endDate = endDate;
+      }
+
       const response = await ticketApi.list(params);
       const resData = response.data;
 
@@ -165,7 +175,7 @@ export default function TicketListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter]);
+  }, [pagination.pageIndex, pagination.pageSize, statusFilter, searchQuery, unratedFilter, startDate, endDate]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -521,6 +531,28 @@ export default function TicketListPage() {
               setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
             className="pl-9"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Input 
+            type="date" 
+            value={startDate} 
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+            className="w-[140px] text-sm"
+          />
+          <span className="text-sm text-muted-foreground">-</span>
+          <Input 
+            type="date" 
+            value={endDate} 
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+            className="w-[140px] text-sm"
           />
         </div>
 
