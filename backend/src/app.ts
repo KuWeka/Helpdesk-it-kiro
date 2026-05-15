@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import helmet from 'helmet';
+import { v4 as uuidv4 } from 'uuid';
 import authRoutes from './routes/auth';
 import ticketRoutes from './routes/tickets';
 import settingsRoutes from './routes/settings';
@@ -11,10 +13,26 @@ import profileRoutes from './routes/profile';
 import reportRoutes from './routes/reports';
 import notificationRoutes from './routes/notifications';
 import staffRoutes from './routes/staff';
+import { logger } from './utils/logger';
+import { runWithRequestContext } from './lib/requestContext';
 
 dotenv.config();
 
 const app = express();
+
+// Security headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// Request ID and async context
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const requestId = uuidv4();
+  req.requestId = requestId;
+  runWithRequestContext({ requestId }, () => next());
+});
 
 // CORS configuration
 app.use(
@@ -66,17 +84,19 @@ interface AppError extends Error {
   details?: unknown;
 }
 
-app.use((err: AppError, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: AppError, req: Request, res: Response, _next: NextFunction) => {
   const statusCode = err.statusCode || 500;
   const code = err.code || 'INTERNAL_ERROR';
   const message = err.message || 'Terjadi kesalahan internal server';
+  const requestId = req.requestId;
 
   // Log error in development
   if (process.env.NODE_ENV === 'development') {
-    console.error('[Error]', {
+    logger.error('[Error]', {
       statusCode,
       code,
       message,
+      requestId,
       stack: err.stack,
     });
   }
@@ -89,6 +109,10 @@ app.use((err: AppError, _req: Request, res: Response, _next: NextFunction) => {
 
   if (err.details) {
     response.details = err.details;
+  }
+
+  if (requestId) {
+    response.requestId = requestId;
   }
 
   if (process.env.NODE_ENV === 'development') {

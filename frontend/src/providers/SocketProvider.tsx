@@ -44,7 +44,13 @@ const SocketContext = createContext<SocketContextValue>({
 
 // ─── Provider ───────────────────────────────────────────────────────────────
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
+
+type SocketErrorWithData = Error & {
+  data?: {
+    code?: string;
+  };
+};
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -91,7 +97,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       });
 
     // Create socket connection with auth token
-    const socket = io(SOCKET_URL, {
+    const socket = io(SOCKET_URL || window.location.origin, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -105,26 +111,34 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on('connect', () => {
       setIsConnected(true);
-      console.log('[Socket.io] Connected');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Socket.io] Connected');
+      }
     });
 
     socket.on('disconnect', (reason) => {
       setIsConnected(false);
-      console.log('[Socket.io] Disconnected:', reason);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Socket.io] Disconnected:', reason);
+      }
     });
 
     socket.on('connect_error', (error) => {
       setIsConnected(false);
-      console.error('[Socket.io] Connection error:', error.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Socket.io] Connection error:', error.message);
+      }
 
       // Handle auth failures - if token is invalid/expired, clean up
-      const errorData = (error as any)?.data;
+      const errorData = (error as SocketErrorWithData)?.data;
       if (
         errorData?.code === 'UNAUTHORIZED' ||
         errorData?.code === 'TOKEN_EXPIRED' ||
         errorData?.code === 'INVALID_TOKEN'
       ) {
-        console.warn('[Socket.io] Auth failed, disconnecting');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Socket.io] Auth failed, disconnecting');
+        }
         socket.disconnect();
       }
     });
@@ -146,7 +160,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         try {
           listener(notification);
         } catch (err) {
-          console.error('[Socket.io] Notification listener error:', err);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[Socket.io] Notification listener error:', err);
+          }
         }
       });
     });

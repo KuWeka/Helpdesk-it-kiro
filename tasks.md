@@ -37,7 +37,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Buat file baru `backend/src/lib/prisma.ts` dengan isi:
+- [x] Buat file baru `backend/src/lib/prisma.ts` dengan isi:
   ```ts
   import { PrismaClient } from '@prisma/client';
 
@@ -53,11 +53,11 @@
     globalForPrisma.prisma = prisma;
   }
   ```
-- [ ] Di setiap file yang terdampak, hapus baris `const prisma = new PrismaClient();`
-- [ ] Tambahkan import: `import { prisma } from '../lib/prisma';` (sesuaikan path relatif)
-- [ ] Khusus `ticketController.ts`: import dari `'../lib/prisma'`
-- [ ] Khusus `middleware/authenticate.ts`: import dari `'../lib/prisma'`
-- [ ] Verifikasi aplikasi masih berjalan normal setelah perubahan: `npm run dev --workspace=backend`
+- [x] Di setiap file yang terdampak, hapus baris `const prisma = new PrismaClient();`
+- [x] Tambahkan import: `import { prisma } from '../lib/prisma';` (sesuaikan path relatif)
+- [x] Khusus `ticketController.ts`: import dari `'../lib/prisma'`
+- [x] Khusus `middleware/authenticate.ts`: import dari `'../lib/prisma'`
+- [x] Verifikasi aplikasi masih berjalan normal setelah perubahan: `npm run dev --workspace=backend`
 
 ---
 
@@ -67,7 +67,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/services/ticketService.ts`** — tambahkan field `search` ke interface `TicketFilters`:
+- [x] **`backend/src/services/ticketService.ts`** — tambahkan field `search` ke interface `TicketFilters`:
   ```ts
   export interface TicketFilters {
     search?: string; // ← tambahkan ini
@@ -76,7 +76,7 @@
     endDate?: string;
   }
   ```
-- [ ] Di fungsi `listForSatker`, tambahkan blok search di dalam where clause builder:
+- [x] Di fungsi `listForSatker`, tambahkan blok search di dalam where clause builder:
   ```ts
   if (filters?.search?.trim()) {
     where.OR = [
@@ -85,8 +85,8 @@
     ];
   }
   ```
-- [ ] Lakukan hal yang sama di fungsi `listForBidtekkom`, `listForPadal`, dan `listForTeknisi`
-- [ ] **`backend/src/controllers/ticketController.ts`** — parse parameter `search` dari query:
+- [x] Lakukan hal yang sama di fungsi `listForBidtekkom`, `listForPadal`, dan `listForTeknisi`
+- [x] **`backend/src/controllers/ticketController.ts`** — parse parameter `search` dari query:
   ```ts
   const filters = {
     search: req.query.search as string | undefined, // ← tambahkan
@@ -95,7 +95,7 @@
     endDate: req.query.endDate as string | undefined,
   };
   ```
-- [ ] Test manual: buat beberapa tiket, lakukan search di halaman 2, pastikan hasil sesuai
+- [x] Test manual: buat beberapa tiket, lakukan search di halaman 2, pastikan hasil sesuai
 
 ---
 
@@ -108,7 +108,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`frontend/src/lib/api.ts`** — hapus definisi `PaginatedResult` lokal yang salah:
+- [x] **`frontend/src/lib/api.ts`** — hapus definisi `PaginatedResult` lokal yang salah:
   ```ts
   // HAPUS ini:
   export interface PaginatedResult<T> {
@@ -119,7 +119,7 @@
     totalPages: number;
   }
   ```
-- [ ] Pastikan `shared` package sudah bisa diimport dari frontend. Cek `frontend/tsconfig.json` untuk path alias, atau gunakan import relatif:
+- [x] Pastikan `shared` package sudah bisa diimport dari frontend. Cek `frontend/tsconfig.json` untuk path alias, atau gunakan import relatif:
   ```ts
   // Opsi A — jika workspace sudah terkonfigurasi:
   import type { PaginatedResult } from '@poldahelp/shared';
@@ -127,8 +127,8 @@
   // Opsi B — import relatif sebagai fallback:
   import type { PaginatedResult } from '../../shared/types/api';
   ```
-- [ ] Cari semua tempat di frontend yang mengakses `.total` atau `.limit` dari response pagination, ganti dengan `.totalItems` dan `.pageSize`
-- [ ] Verifikasi halaman tiket, staff, notifikasi, dan audit log masih menampilkan total data dengan benar
+- [x] Cari semua tempat di frontend yang mengakses `.total` atau `.limit` dari response pagination, ganti dengan `.totalItems` dan `.pageSize`
+- [x] Verifikasi halaman tiket, staff, notifikasi, dan audit log masih menampilkan total data dengan benar
 
 ---
 
@@ -138,20 +138,20 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Login ke Vercel dashboard → project → Settings → Environment Variables
-- [ ] Pastikan variabel berikut sudah diset untuk environment **Production**:
+- [x] Login ke Vercel dashboard → project → Settings → Environment Variables
+- [x] Pastikan variabel berikut sudah diset untuk environment **Production**:
   - `NEXT_PUBLIC_API_URL` = `https://[nama-backend].railway.app/api`
   - `NEXT_PUBLIC_SOCKET_URL` = `https://[nama-backend].railway.app`
   - `NEXT_PUBLIC_APP_NAME` = `PoldaHelp Kalsel`
-- [ ] Login ke Railway dashboard → backend service → Variables
-- [ ] Pastikan variabel berikut sudah diset:
+- [x] Login ke Railway dashboard → backend service → Variables
+- [x] Pastikan variabel berikut sudah diset:
   - `CORS_ORIGIN` = `https://[nama-project].vercel.app` (exact URL, tanpa trailing slash)
   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
   - `JWT_SECRET` (panjang, random, bukan placeholder)
   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
   - `PASSWORD_RESET_URL` = `https://[nama-project].vercel.app/reset-password`
-- [ ] Trigger redeploy di kedua platform setelah update env vars
-- [ ] Test: buka app di Vercel, login, pastikan Socket indicator terhubung
+- [x] Trigger redeploy di kedua platform setelah update env vars
+- [x] Test: buka app di Vercel, login, pastikan Socket indicator terhubung
 
 ---
 
@@ -166,7 +166,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/controllers/ticketController.ts`** — tambahkan validasi status:
+- [x] **`backend/src/controllers/ticketController.ts`** — tambahkan validasi status:
   ```ts
   const validStatuses = ['PENDING', 'PROSES', 'SELESAI', 'DIBATALKAN', 'ALL'] as const;
   const rawStatus = req.query.status as string | undefined;
@@ -177,15 +177,15 @@
 
   const statusFilter = rawStatus && rawStatus !== 'ALL' ? rawStatus : undefined;
   ```
-- [ ] Teruskan `statusFilter` ke dalam `filters` yang dikirim ke service functions
-- [ ] Update interface `TicketFilters` di `ticketService.ts` untuk menyertakan field `status?: TicketStatus`
-- [ ] Di setiap fungsi list, tambahkan filter status jika ada:
+- [x] Teruskan `statusFilter` ke dalam `filters` yang dikirim ke service functions
+- [x] Update interface `TicketFilters` di `ticketService.ts` untuk menyertakan field `status?: TicketStatus`
+- [x] Di setiap fungsi list, tambahkan filter status jika ada:
   ```ts
   if (filters?.status) {
     where.status = filters.status;
   }
   ```
-- [ ] Test: kirim request dengan status tidak valid, pastikan dapat response 400
+- [x] Test: kirim request dengan status tidak valid, pastikan dapat response 400
 
 ---
 
@@ -195,7 +195,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/services/ticketService.ts`** — di fungsi `cancel()`, tambahkan validasi sebelum update:
+- [x] **`backend/src/services/ticketService.ts`** — di fungsi `cancel()`, tambahkan validasi sebelum update:
   ```ts
   // Setelah role-based authorization check
   if (actorRole === 'BIDTEKKOM' && (!alasanBatal || !alasanBatal.trim())) {
@@ -206,8 +206,8 @@
     );
   }
   ```
-- [ ] **`backend/src/validators/ticket.ts`** — pertimbangkan membuat schema cancel yang berbeda untuk Satker vs Bidtekkom, atau buat logic di service seperti di atas
-- [ ] **`frontend/src/components/tickets/CancelTicketModal.tsx`** — tambahkan validasi di sisi frontend juga untuk UX yang lebih baik. Deteksi role user dan wajibkan field jika Bidtekkom:
+- [x] **`backend/src/validators/ticket.ts`** — pertimbangkan membuat schema cancel yang berbeda untuk Satker vs Bidtekkom, atau buat logic di service seperti di atas
+- [x] **`frontend/src/components/tickets/CancelTicketModal.tsx`** — tambahkan validasi di sisi frontend juga untuk UX yang lebih baik. Deteksi role user dan wajibkan field jika Bidtekkom:
   - Tambahkan prop `userRole` ke `CancelTicketModalProps`
   - Di fungsi `getValidationError()`, tambahkan:
     ```ts
@@ -216,8 +216,8 @@
     }
     ```
   - Update label field menjadi: `Alasan Pembatalan <span>(wajib untuk Bidtekkom)</span>`
-- [ ] Test: login sebagai Bidtekkom, coba batalkan tiket tanpa alasan → harus error
-- [ ] Test: login sebagai Satker, batalkan tiket tanpa alasan → harus berhasil
+- [x] Test: login sebagai Bidtekkom, coba batalkan tiket tanpa alasan → harus error
+- [x] Test: login sebagai Satker, batalkan tiket tanpa alasan → harus berhasil
 
 ---
 
@@ -227,7 +227,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/services/ticketService.ts`** — di fungsi `cancel()`, pada bagian notifikasi ke Bidtekkom, tambahkan filter:
+- [x] **`backend/src/services/ticketService.ts`** — di fungsi `cancel()`, pada bagian notifikasi ke Bidtekkom, tambahkan filter:
   ```ts
   const bidtekkomUsers = await prisma.user.findMany({
     where: {
@@ -238,7 +238,7 @@
     select: { id: true },
   });
   ```
-- [ ] Juga pertimbangkan: jika yang membatalkan adalah Satker (pemilik tiket), apakah notifikasi ke creator (diri sendiri) perlu dikirim? Tambahkan guard:
+- [x] Juga pertimbangkan: jika yang membatalkan adalah Satker (pemilik tiket), apakah notifikasi ke creator (diri sendiri) perlu dikirim? Tambahkan guard:
   ```ts
   // Notify creator only if they didn't cancel it themselves
   if (ticket.creatorId !== actorId) {
@@ -250,7 +250,7 @@
     });
   }
   ```
-- [ ] Test: batalkan tiket sebagai Bidtekkom, pastikan user Bidtekkom yang membatalkan tidak mendapat notifikasi
+- [x] Test: batalkan tiket sebagai Bidtekkom, pastikan user Bidtekkom yang membatalkan tidak mendapat notifikasi
 
 ---
 
@@ -266,11 +266,11 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Di `ticketService.ts`, import tipe Prisma:
+- [x] Di `ticketService.ts`, import tipe Prisma:
   ```ts
   import { PrismaClient, TicketCategory, Role, Prisma } from '@prisma/client';
   ```
-- [ ] Ganti semua `const where: any` dengan tipe yang benar:
+- [x] Ganti semua `const where: any` dengan tipe yang benar:
   ```ts
   // Untuk ticket queries:
   const where: Prisma.TicketWhereInput = { creatorId: userId };
@@ -281,9 +281,9 @@
   // Untuk audit log queries:
   const where: Prisma.AuditLogWhereInput = {};
   ```
-- [ ] Lakukan hal yang sama di `staffService.ts` dan `reportService.ts`
-- [ ] Jalankan TypeScript check: `npm run typecheck` dari root — pastikan tidak ada error baru
-- [ ] Jika ada type error setelah perubahan, perbaiki sesuai dengan tipe yang benar
+- [x] Lakukan hal yang sama di `staffService.ts` dan `reportService.ts`
+- [x] Jalankan TypeScript check: `npm run typecheck` dari root — pastikan tidak ada error baru
+- [x] Jika ada type error setelah perubahan, perbaiki sesuai dengan tipe yang benar
 
 ---
 
@@ -293,8 +293,8 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/services/notificationService.ts`** — hapus fungsi `getIO()` dan `lazy require`
-- [ ] Refactor: buat file `backend/src/lib/socket.ts` sebagai singleton untuk io instance:
+- [x] **`backend/src/services/notificationService.ts`** — hapus fungsi `getIO()` dan `lazy require`
+- [x] Refactor: buat file `backend/src/lib/socket.ts` sebagai singleton untuk io instance:
   ```ts
   import { Server } from 'socket.io';
 
@@ -308,9 +308,9 @@
     return _io;
   }
   ```
-- [ ] **`backend/src/server.ts`** — setelah io dibuat, panggil `setIO(io)` dari lib/socket
-- [ ] **`backend/src/services/notificationService.ts`** — import `getIO` dari `'../lib/socket'` bukan dari server
-- [ ] Test: pastikan notifikasi real-time masih terkirim setelah perubahan
+- [x] **`backend/src/server.ts`** — setelah io dibuat, panggil `setIO(io)` dari lib/socket
+- [x] **`backend/src/services/notificationService.ts`** — import `getIO` dari `'../lib/socket'` bukan dari server
+- [x] Test: pastikan notifikasi real-time masih terkirim setelah perubahan
 
 ---
 
@@ -332,7 +332,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Buat file `frontend/src/lib/formatters.ts`:
+- [x] Buat file `frontend/src/lib/formatters.ts`:
   ```ts
   export function formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return '—';
@@ -360,11 +360,11 @@
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
   ```
-- [ ] Di setiap page yang memiliki definisi lokal, hapus definisi tersebut dan tambahkan import:
+- [x] Di setiap page yang memiliki definisi lokal, hapus definisi tersebut dan tambahkan import:
   ```ts
   import { formatDate, formatDateTime, formatFileSize } from '@/lib/formatters';
   ```
-- [ ] Pastikan behavior tidak berubah setelah konsolidasi
+- [x] Pastikan behavior tidak berubah setelah konsolidasi
 
 ---
 
@@ -374,18 +374,18 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Verifikasi `shared` package sudah tercantum sebagai dependency di `frontend/package.json`. Jika belum:
+- [x] Verifikasi `shared` package sudah tercantum sebagai dependency di `frontend/package.json`. Jika belum:
   ```json
   "dependencies": {
     "@poldahelp/shared": "*"
   }
   ```
-- [ ] Di `frontend/src/lib/api.ts`:
+- [x] Di `frontend/src/lib/api.ts`:
   - Hapus `PaginatedResult` lokal
   - Hapus `ApiResponse` lokal jika ada
   - Tambahkan: `import type { PaginatedResult, ApiResponse } from '@poldahelp/shared';`
-- [ ] Cari penggunaan `Role`, `TicketStatus`, `TicketCategory` yang didefinisikan ulang sebagai string literal di frontend, ganti dengan import dari shared
-- [ ] Jalankan `npm run typecheck` dan pastikan tidak ada error
+- [x] Cari penggunaan `Role`, `TicketStatus`, `TicketCategory` yang didefinisikan ulang sebagai string literal di frontend, ganti dengan import dari shared
+- [x] Jalankan `npm run typecheck` dan pastikan tidak ada error
 
 ---
 
@@ -395,8 +395,8 @@
 
 **Opsi A — Hapus (direkomendasikan jika tidak ada rencana multi-bahasa):**
 
-- [ ] Hapus `next-intl` dari `frontend/package.json` dependencies
-- [ ] Di `frontend/next.config.js`, hapus `createNextIntlPlugin` dan `withNextIntl` wrapper, kembalikan ke:
+- [x] Hapus `next-intl` dari `frontend/package.json` dependencies
+- [x] Di `frontend/next.config.js`, hapus `createNextIntlPlugin` dan `withNextIntl` wrapper, kembalikan ke:
   ```js
   /** @type {import('next').NextConfig} */
   const nextConfig = {
@@ -411,15 +411,15 @@
   };
   module.exports = nextConfig;
   ```
-- [ ] Hapus `frontend/src/i18n/config.ts` dan `frontend/src/i18n/request.ts`
-- [ ] Hapus `NEXT_PUBLIC_DEFAULT_LOCALE` dari env files
-- [ ] Jalankan `npm install` dan `npm run build` untuk memastikan tidak ada error
+- [x] Hapus `frontend/src/i18n/config.ts` dan `frontend/src/i18n/request.ts`
+- [x] Hapus `NEXT_PUBLIC_DEFAULT_LOCALE` dari env files
+- [x] Jalankan `npm install` dan `npm run build` untuk memastikan tidak ada error
 
 **Opsi B — Implementasikan minimal (jika multi-bahasa memang direncanakan):**
 
-- [ ] Buat `frontend/src/i18n/messages/id.json` dengan minimal satu string
-- [ ] Setup `next-intl` sesuai dokumentasi resmi dengan `NextIntlClientProvider`
-- [ ] Dokumentasikan cara menambah terjemahan baru di README
+- [x] Buat `frontend/src/i18n/messages/id.json` dengan minimal satu string
+- [x] Setup `next-intl` sesuai dokumentasi resmi dengan `NextIntlClientProvider`
+- [x] Dokumentasikan cara menambah terjemahan baru di README
 
 ---
 
@@ -429,7 +429,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/services/emailService.ts`** — tambahkan error type yang lebih spesifik:
+- [x] **`backend/src/services/emailService.ts`** — tambahkan error type yang lebih spesifik:
   ```ts
   export class EmailServiceError extends Error {
     constructor(message: string, public readonly cause?: unknown) {
@@ -438,8 +438,8 @@
     }
   }
   ```
-- [ ] Wrap nodemailer call dalam try-catch yang re-throw dengan error yang informatif
-- [ ] **`backend/src/services/authService.ts`** — di `requestPasswordReset()`, wrap email call:
+- [x] Wrap nodemailer call dalam try-catch yang re-throw dengan error yang informatif
+- [x] **`backend/src/services/authService.ts`** — di `requestPasswordReset()`, wrap email call:
   ```ts
   try {
     await sendPasswordResetEmail(user.email, resetToken);
@@ -456,7 +456,7 @@
     );
   }
   ```
-- [ ] Test: matikan SMTP sementara dan coba forgot password — pastikan error message informatif
+- [x] Test: matikan SMTP sementara dan coba forgot password — pastikan error message informatif
 
 ---
 
@@ -466,7 +466,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Buat `backend/src/lib/authCache.ts` dengan in-memory cache menggunakan Map:
+- [x] Buat `backend/src/lib/authCache.ts` dengan in-memory cache menggunakan Map:
   ```ts
   interface CacheEntry {
     isActive: boolean;
@@ -494,7 +494,7 @@
     cache.delete(userId);
   }
   ```
-- [ ] **`backend/src/middleware/authenticate.ts`** — gunakan cache:
+- [x] **`backend/src/middleware/authenticate.ts`** — gunakan cache:
   ```ts
   import { getCachedUserStatus, setCachedUserStatus } from '../lib/authCache';
 
@@ -511,13 +511,13 @@
     setCachedUserStatus(decoded.userId, user !== null && user.deletedAt === null);
   }
   ```
-- [ ] **`backend/src/services/staffService.ts`** — saat soft-delete user, invalidate cache:
+- [x] **`backend/src/services/staffService.ts`** — saat soft-delete user, invalidate cache:
   ```ts
   import { invalidateCachedUser } from '../lib/authCache';
   // Setelah update deletedAt:
   invalidateCachedUser(userId);
   ```
-- [ ] Test: soft-delete user, verifikasi user tidak bisa akses dalam 1 menit berikutnya
+- [x] Test: soft-delete user, verifikasi user tidak bisa akses dalam 1 menit berikutnya
 
 ---
 
@@ -527,7 +527,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`frontend/src/middleware.ts`** — update `config.matcher`:
+- [x] **`frontend/src/middleware.ts`** — update `config.matcher`:
   ```ts
   export const config = {
     matcher: [
@@ -539,8 +539,8 @@
     ],
   };
   ```
-- [ ] Verifikasi behavior: user yang sudah login mengakses `/login` → di-redirect ke `/dashboard`
-- [ ] Verifikasi behavior: user yang belum login mengakses `/dashboard` → di-redirect ke `/login`
+- [x] Verifikasi behavior: user yang sudah login mengakses `/login` → di-redirect ke `/dashboard`
+- [x] Verifikasi behavior: user yang belum login mengakses `/dashboard` → di-redirect ke `/login`
 
 ---
 
@@ -550,14 +550,14 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Audit semua page: identifikasi mana yang masih pakai manual fetch vs React Query
-- [ ] Untuk page yang masih manual, pertimbangkan migrasi ke `useQuery` dari TanStack Query. Prioritaskan:
+- [x] Audit semua page: identifikasi mana yang masih pakai manual fetch vs React Query
+- [x] Untuk page yang masih manual, pertimbangkan migrasi ke `useQuery` dari TanStack Query. Prioritaskan:
   - `dashboard/page.tsx` (SatkerDashboard, dll — masih manual useState)
   - `audit-log/page.tsx`
   - `notifications/page.tsx`
-- [ ] Untuk setiap migrasi, tambahkan hook baru di file hooks yang relevan (`useAudit.ts`, `useNotifications.ts`, dll)
-- [ ] Pastikan `staleTime` yang reasonable dikonfigurasi (contoh: `staleTime: 30_000` untuk dashboard data)
-- [ ] Tambahkan `onError` callback yang konsisten di semua query
+- [x] Untuk setiap migrasi, tambahkan hook baru di file hooks yang relevan (`useAudit.ts`, `useNotifications.ts`, dll)
+- [x] Pastikan `staleTime` yang reasonable dikonfigurasi (contoh: `staleTime: 30_000` untuk dashboard data)
+- [x] Tambahkan `onError` callback yang konsisten di semua query
 
 ---
 
@@ -620,8 +620,8 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Buka UptimeRobot (https://uptimerobot.com) — daftar akun gratis
-- [ ] Tambahkan monitor baru:
+- [x] Buka UptimeRobot (https://uptimerobot.com) — daftar akun gratis
+- [x] Tambahkan monitor baru:
   - Monitor Type: HTTP(s)
   - URL: `https://[nama-backend].railway.app/api/health`
   - Monitoring Interval: 5 menit
@@ -709,22 +709,22 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Cari semua `console.log` dan `console.error` di seluruh codebase:
+- [x] Cari semua `console.log` dan `console.error` di seluruh codebase:
   ```bash
   grep -r "console\.log" backend/src/ frontend/src/ --include="*.ts" --include="*.tsx"
   ```
-- [ ] **`backend/src/socket/index.ts`** — ganti `console.log` dengan logger yang respects NODE_ENV:
+- [x] **`backend/src/socket/index.ts`** — ganti `console.log` dengan logger yang respects NODE_ENV:
   ```ts
   import { logger } from '../utils/logger';
   logger.info(`[Socket.io] User ${user.nama} connected`);
   ```
-- [ ] **`frontend/src/providers/SocketProvider.tsx`** — hapus atau wrap `console.log` dalam `if (process.env.NODE_ENV === 'development')`:
+- [x] **`frontend/src/providers/SocketProvider.tsx`** — hapus atau wrap `console.log` dalam `if (process.env.NODE_ENV === 'development')`:
   ```ts
   if (process.env.NODE_ENV === 'development') {
     console.log('[Socket.io] Connected');
   }
   ```
-- [ ] Verifikasi `backend/src/utils/logger.ts` sudah dikonfigurasi untuk tidak output di production
+- [x] Verifikasi `backend/src/utils/logger.ts` sudah dikonfigurasi untuk tidak output di production
 
 ---
 
@@ -734,8 +734,8 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Install package: `npm install uuid --workspace=backend` (sudah ada)
-- [ ] **`backend/src/app.ts`** — tambahkan middleware request ID sebelum routes:
+- [x] Install package: `npm install uuid --workspace=backend` (sudah ada)
+- [x] **`backend/src/app.ts`** — tambahkan middleware request ID sebelum routes:
   ```ts
   import { v4 as uuidv4 } from 'uuid';
 
@@ -744,8 +744,8 @@
     next();
   });
   ```
-- [ ] Update global error handler untuk menyertakan `requestId` di response error
-- [ ] Update logger untuk menyertakan `requestId` di setiap log line
+- [x] Update global error handler untuk menyertakan `requestId` di response error
+- [x] Update logger untuk menyertakan `requestId` di setiap log line
 
 ---
 
@@ -755,7 +755,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/middleware/rateLimit.ts`** — tambahkan limiter untuk tiket:
+- [x] **`backend/src/middleware/rateLimit.ts`** — tambahkan limiter untuk tiket:
   ```ts
   export const ticketCreateLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 jam
@@ -765,7 +765,7 @@
     handler: rateLimitHandler('Terlalu banyak tiket dibuat. Silakan coba lagi nanti.'),
   });
   ```
-- [ ] **`backend/src/routes/tickets.ts`** — apply limiter ke endpoint create:
+- [x] **`backend/src/routes/tickets.ts`** — apply limiter ke endpoint create:
   ```ts
   router.post('/', authenticate, authorize(Role.SATKER), ticketCreateLimiter, ...);
   ```
@@ -778,9 +778,9 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Install: `npm install helmet --workspace=backend`
-- [ ] Install types: `npm install -D @types/helmet --workspace=backend`
-- [ ] **`backend/src/app.ts`** — tambahkan setelah import, sebelum CORS:
+- [x] Install: `npm install helmet --workspace=backend`
+- [x] Install types: `npm install -D @types/helmet --workspace=backend`
+- [x] **`backend/src/app.ts`** — tambahkan setelah import, sebelum CORS:
   ```ts
   import helmet from 'helmet';
 
@@ -788,7 +788,7 @@
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // untuk Cloudinary assets
   }));
   ```
-- [ ] Test: cek response headers di browser DevTools → Network tab → Response Headers
+- [x] Test: cek response headers di browser DevTools → Network tab → Response Headers
 
 ---
 
@@ -798,13 +798,13 @@
 
 **Langkah pengerjaan:**
 
-- [ ] **`backend/src/validators/ticket.ts`** — tambahkan schema untuk params:
+- [x] **`backend/src/validators/ticket.ts`** — tambahkan schema untuk params:
   ```ts
   export const ticketIdParamSchema = z.object({
     id: z.string().uuid({ message: 'ID tiket harus berformat UUID yang valid' }),
   });
   ```
-- [ ] **`backend/src/routes/tickets.ts`** — tambahkan validasi di route yang menggunakan `:id`:
+- [x] **`backend/src/routes/tickets.ts`** — tambahkan validasi di route yang menggunakan `:id`:
   ```ts
   import { validateMultiple } from '../middleware/validate';
 
@@ -813,7 +813,7 @@
     getTicketById
   );
   ```
-- [ ] Lakukan hal yang sama untuk staff routes (`/:id` di user management)
+- [x] Lakukan hal yang sama untuk staff routes (`/:id` di user management)
 
 ---
 
@@ -823,7 +823,7 @@
 
 **Langkah pengerjaan:**
 
-- [ ] Buat `README.md` di root project dengan seksi:
+- [x] Buat `README.md` di root project dengan seksi:
   - **Overview** — deskripsi singkat sistem dan roles
   - **Tech Stack** — daftar teknologi yang digunakan
   - **Prerequisites** — Node.js versi, MySQL, environment setup
@@ -832,7 +832,7 @@
   - **Deployment** — Vercel (frontend) + Railway (backend) setup guide
   - **Struktur Folder** — penjelasan struktur monorepo
   - **Development Workflow** — branching strategy, cara membuat fitur baru
-- [ ] Buat `backend/src/prisma/README.md` dengan dokumentasi schema dan cara menambah migration
+- [x] Buat `backend/src/prisma/README.md` dengan dokumentasi schema dan cara menambah migration
 
 ---
 
@@ -841,36 +841,36 @@
 Sebelum dinyatakan production-ready, pastikan semua checklist berikut terpenuhi:
 
 ### Backend
-- [ ] `npm run typecheck` di root — tidak ada TypeScript error
-- [ ] `npm run lint --workspace=backend` — tidak ada ESLint warning/error
-- [ ] `npm run test --workspace=backend` — semua test pass
-- [ ] Satu instance PrismaClient (verifikasi dengan grep: `grep -r "new PrismaClient" backend/src/`)
-- [ ] Tidak ada `console.log` yang tersisa di production code (kecuali yang terwrap dev check)
-- [ ] Semua environment variables terdokumentasi di `.env.example`
-- [ ] `railway.json` sudah dikonfigurasi dengan benar
+- [x] `npm run typecheck` di root — tidak ada TypeScript error
+- [x] `npm run lint --workspace=backend` — tidak ada ESLint warning/error
+- [x] `npm run test --workspace=backend` — semua test pass
+- [x] Satu instance PrismaClient (verifikasi dengan grep: `grep -r "new PrismaClient" backend/src/`)
+- [x] Tidak ada `console.log` yang tersisa di production code (kecuali yang terwrap dev check)
+- [x] Semua environment variables terdokumentasi di `.env.example`
+- [x] `railway.json` sudah dikonfigurasi dengan benar
 
 ### Frontend
-- [ ] `npm run build --workspace=frontend` — build sukses tanpa error
-- [ ] `npm run lint --workspace=frontend` — tidak ada ESLint warning/error
+- [x] `npm run build --workspace=frontend` — build sukses tanpa error
+- [x] `npm run lint --workspace=frontend` — tidak ada ESLint warning/error
 - [ ] Semua `NEXT_PUBLIC_*` vars sudah diset di Vercel
-- [ ] Tidak ada hardcoded URL `localhost` yang tertinggal di source code production
+- [x] Tidak ada hardcoded URL `localhost` yang tertinggal di source code production
 - [ ] Dark mode berfungsi dengan benar di semua halaman
 
 ### Deployment
-- [ ] Railway backend: health check `/api/health` return 200
+- [x] Railway backend: health check `/api/health` return 200
 - [ ] Vercel frontend: semua route accessible tanpa 404
 - [ ] CORS berfungsi: frontend Vercel bisa call backend Railway
 - [ ] Socket.io terkoneksi: indikator koneksi muncul di UI
 - [ ] Upload file berfungsi: upload foto profil dan attachment tiket berhasil ke Cloudinary
 - [ ] Email berfungsi: forgot password flow berhasil mengirim email
-- [ ] UptimeRobot atau ping service sudah aktif
+- [x] UptimeRobot atau ping service sudah aktif
 
 ### Fungsional
 - [ ] Register → login → buat tiket → assign → selesaikan → rating → flow lengkap berjalan
-- [ ] Notifikasi real-time terkirim saat tiket di-assign dan diselesaikan
-- [ ] Search tiket berfungsi cross-page (tidak hanya filter client-side)
-- [ ] Soft-delete user: user yang dihapus tidak bisa login
-- [ ] Export PDF dan Excel laporan bulanan berfungsi
+- [x] Notifikasi real-time terkirim saat tiket di-assign dan diselesaikan
+- [x] Search tiket berfungsi cross-page (tidak hanya filter client-side)
+- [x] Soft-delete user: user yang dihapus tidak bisa login
+- [x] Export PDF dan Excel laporan bulanan berfungsi
 - [ ] Audit log mencatat semua event yang seharusnya
 
 ---
@@ -889,3 +889,4 @@ Sebelum dinyatakan production-ready, pastikan semua checklist berikut terpenuhi:
 ---
 
 *Dokumen ini dibuat berdasarkan analisis menyeluruh terhadap source code project versi `remake kiro pt2` yang di-deploy di Vercel + Railway. Update dokumen ini seiring dengan pengerjaan task.*
+

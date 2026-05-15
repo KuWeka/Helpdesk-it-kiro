@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { JwtUserPayload } from '../types/express';
+import { logger } from '../utils/logger';
 
 /**
  * Extends the default SocketData interface to include the authenticated user payload.
@@ -78,11 +79,11 @@ export function setupSocketAuth(io: Server): void {
     // Join user to their personal room
     const userRoom = `user_${user.userId}`;
     socket.join(userRoom);
-    console.log(`[Socket.io] User ${user.nama} (${user.userId}) connected - room: ${userRoom}`);
+    logger.debug(`[Socket.io] User ${user.nama} (${user.userId}) connected - room: ${userRoom}`);
 
     // Handle disconnect
     socket.on('disconnect', (reason: string) => {
-      console.log(`[Socket.io] User ${user.nama} (${user.userId}) disconnected - reason: ${reason}`);
+      logger.debug(`[Socket.io] User ${user.nama} (${user.userId}) disconnected - reason: ${reason}`);
     });
   });
 }

@@ -14,6 +14,7 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
   [TicketStatus.PROSES]: 'Proses',
   [TicketStatus.SELESAI]: 'Selesai',
   [TicketStatus.DIBATALKAN]: 'Dibatalkan',
+  [TicketStatus.DITOLAK]: 'Ditolak',
 };
 
 export const CATEGORY_LABELS: Record<TicketCategory, string> = {

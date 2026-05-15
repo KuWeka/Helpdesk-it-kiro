@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import { setupSocketAuth } from './socket';
 import { setIO } from './lib/socket';
+import { logger } from './utils/logger';
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
@@ -30,9 +31,9 @@ export { io };
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`[Server] Running on port ${PORT}`);
-  console.log(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+  logger.info(`[Server] Running on port ${PORT}`);
+  logger.info(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
 });
 
 export default server;

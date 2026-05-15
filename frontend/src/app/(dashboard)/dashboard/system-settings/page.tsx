@@ -92,7 +92,7 @@ export default function SystemSettingsPage() {
       setCurrentAppName(name);
 
       if (data?.appLogo) {
-        const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/settings/logo`;
+        const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/settings/logo`;
         setCurrentLogoUrl(logoUrl);
       } else {
         setCurrentLogoUrl(null);
@@ -196,7 +196,7 @@ export default function SystemSettingsPage() {
       await settingsApi.uploadLogo(formData);
 
       // Update current logo URL with cache-busting
-      const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/settings/logo?t=${Date.now()}`;
+      const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/settings/logo?t=${Date.now()}`;
       setCurrentLogoUrl(logoUrl);
       setSelectedFile(null);
       setPreviewUrl(null);

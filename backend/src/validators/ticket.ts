@@ -69,3 +69,27 @@ export const rejectTicketSchema = z.object({
     .min(1, { message: 'Alasan penolakan wajib diisi' })
     .max(500, { message: 'Alasan penolakan tidak boleh lebih dari 500 karakter' }),
 });
+
+/**
+ * Schema validasi untuk route param tiket.
+ * - id: UUID format, wajib
+ */
+export const ticketIdParamSchema = z.object({
+  id: z
+    .string({ required_error: 'ID tiket wajib diisi' })
+    .uuid({ message: 'ID tiket harus berformat UUID yang valid' }),
+});
+
+/**
+ * Schema validasi untuk route param attachment tiket.
+ * - id: UUID format, wajib
+ * - fileId: string, wajib
+ */
+export const ticketAttachmentParamSchema = z.object({
+  id: z
+    .string({ required_error: 'ID tiket wajib diisi' })
+    .uuid({ message: 'ID tiket harus berformat UUID yang valid' }),
+  fileId: z
+    .string({ required_error: 'ID file wajib diisi' })
+    .min(1, { message: 'ID file tidak boleh kosong' }),
+});

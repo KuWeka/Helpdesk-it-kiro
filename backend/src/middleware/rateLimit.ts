@@ -63,3 +63,17 @@ export const passwordResetLimiter = rateLimit({
     'Terlalu banyak permintaan reset password. Silakan coba lagi nanti.'
   ),
 });
+
+/**
+ * Ticket creation rate limiter: 20 requests per 60 minutes per IP.
+ */
+export const ticketCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => req.ip || req.socket.remoteAddress || 'unknown',
+  handler: rateLimitHandler(
+    'Terlalu banyak tiket dibuat. Silakan coba lagi nanti.'
+  ),
+});

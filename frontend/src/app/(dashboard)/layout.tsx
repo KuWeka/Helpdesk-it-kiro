@@ -89,7 +89,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   const logoUrl = settings.appLogo
-    ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/settings/logo`
+    ? `${process.env.NEXT_PUBLIC_API_URL || '/api'}/settings/logo`
     : "";
 
   return (

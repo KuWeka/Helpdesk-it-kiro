@@ -60,7 +60,7 @@ import {
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_PHOTO_EXTENSIONS = ["jpg", "jpeg", "png"];
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

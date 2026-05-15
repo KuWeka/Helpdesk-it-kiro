@@ -8,6 +8,7 @@ const mockPrisma = {
   },
   user: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
   },
 };
 
@@ -27,6 +28,11 @@ jest.mock('../utils/fileNaming', () => ({
 const mockAuditLog = jest.fn().mockResolvedValue(undefined);
 jest.mock('../services/auditService', () => ({
   log: (...args: any[]) => mockAuditLog(...args),
+}));
+
+const mockNotificationCreate = jest.fn().mockResolvedValue(undefined);
+jest.mock('../services/notificationService', () => ({
+  create: (...args: any[]) => mockNotificationCreate(...args),
 }));
 
 import { assignToPadal, markComplete, cancel, reject } from '../services/ticketService';
@@ -78,6 +84,12 @@ describe('ticketService - assignToPadal', () => {
       expect.objectContaining({
         eventType: 'TICKET_ASSIGNMENT',
         actorId: 'assigner-1',
+      })
+    );
+    expect(mockNotificationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'padal-1',
+        type: 'TICKET_ASSIGNED',
       })
     );
     expect(result).toBeDefined();
@@ -205,6 +217,12 @@ describe('ticketService - markComplete', () => {
       expect.objectContaining({
         eventType: 'TICKET_COMPLETION',
         actorId: 'padal-1',
+      })
+    );
+    expect(mockNotificationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        type: 'TICKET_COMPLETED',
       })
     );
     expect(result).toBeDefined();
