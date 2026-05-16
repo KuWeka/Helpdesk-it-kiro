@@ -9,11 +9,11 @@
 
 <br/><br/>
 
-# 🚔 PoldaHelp Kalsel
+# 🚔 SIGAP
 
-### Sistem IT Helpdesk Ticketing — Polda Kalimantan Selatan
+### Sistem Informasi Gangguan dan Aduan Polri — Polda Kalimantan Selatan
 
-*Pelaporan gangguan TI yang terstruktur, transparan, dan real-time untuk seluruh satuan kerja.*
+*Pengelolaan informasi gangguan dan aduan kepolisian yang terstruktur, transparan, dan real-time untuk seluruh satuan kerja.*
 
 <br/>
 
@@ -44,7 +44,7 @@
 
 ## 🧭 Tentang Project
 
-**PoldaHelp Kalsel** adalah sistem helpdesk IT internal berbasis web yang dibangun untuk **Kepolisian Daerah Kalimantan Selatan**. Sistem ini menggantikan pencatatan manual gangguan TI dengan alur digital yang terstruktur, mulai dari pelaporan tiket oleh satuan kerja hingga penyelesaian oleh teknisi lapangan.
+**SIGAP** (Sistem Informasi Gangguan dan Aduan Polri) adalah sistem helpdesk IT internal berbasis web yang dibangun untuk **Kepolisian Daerah Kalimantan Selatan**. Sistem ini menggantikan pencatatan manual gangguan TI dengan alur digital yang terstruktur, mulai dari pelaporan tiket oleh satuan kerja hingga penyelesaian oleh teknisi lapangan.
 
 Dibangun sebagai **monorepo** dengan tiga workspace: `frontend`, `backend`, dan `shared` — sehingga tipe dan konstanta bisa digunakan bersama tanpa duplikasi.
 
@@ -99,7 +99,7 @@ PDFKit + ExcelJS           — Generate laporan PDF dan Excel
 
 ### Shared
 ```
-@poldahelp/shared          — Internal package: tipe TypeScript dan konstanta
+@sigap/shared          — Internal package: tipe TypeScript dan konstanta
                              digunakan bersama oleh frontend dan backend
 ```
 
@@ -116,7 +116,7 @@ UptimeRobot                — Health check & uptime monitoring
 ## 🏗 Arsitektur & Struktur Project
 
 ```
-poldahelp-kalsel/                   ← Root monorepo (npm workspaces)
+sigap-polda-kalsel/                   ← Root monorepo (npm workspaces)
 │
 ├── frontend/                       ← Next.js 14 App
 │   └── src/
@@ -305,8 +305,8 @@ SystemSettings ─────────────────────�
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/KuWeka/poldahelp-kalsel.git
-cd poldahelp-kalsel
+git clone https://github.com/KuWeka/sigap-polda-kalsel.git
+cd sigap-polda-kalsel
 
 # Install semua dependencies (frontend + backend + shared sekaligus)
 npm install
@@ -361,7 +361,7 @@ PORT=5000
 NODE_ENV=development
 
 # Database
-DATABASE_URL=mysql://root:password@localhost:3306/poldahelp_kalsel
+DATABASE_URL=mysql://root:password@localhost:3306/sigap_polda_kalsel
 
 # JWT
 JWT_SECRET=ganti-dengan-string-random-panjang-yang-aman
@@ -375,7 +375,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
-SMTP_FROM=noreply@poldahelp-kalsel.id
+SMTP_FROM=noreply@sigap-polda-kalsel.id
 PASSWORD_RESET_URL=http://localhost:3000/reset-password
 
 # Cloudinary
@@ -389,7 +389,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
-NEXT_PUBLIC_APP_NAME=PoldaHelp Kalsel
+NEXT_PUBLIC_APP_NAME=SIGAP
 ```
 
 ---
@@ -482,7 +482,7 @@ npm run typecheck
    ```
    NEXT_PUBLIC_API_URL     = https://your-backend.railway.app/api
    NEXT_PUBLIC_SOCKET_URL  = https://your-backend.railway.app
-   NEXT_PUBLIC_APP_NAME    = PoldaHelp Kalsel
+   NEXT_PUBLIC_APP_NAME    = SIGAP
    ```
 3. Deploy otomatis setiap push ke `main`
 
@@ -537,6 +537,6 @@ Backend expose `/api/health` yang return `{ status: "ok" }`. Gunakan **UptimeRob
 
 <div align="center">
 
-Dibangun untuk **Polda Kalimantan Selatan** &nbsp;·&nbsp; TypeScript Monorepo &nbsp;·&nbsp; Vercel + Railway
+Dibangun untuk **Polda Kalimantan Selatan** sebagai **SIGAP** &nbsp;·&nbsp; TypeScript Monorepo &nbsp;·&nbsp; Vercel + Railway
 
 </div>
