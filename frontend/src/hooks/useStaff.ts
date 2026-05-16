@@ -1,9 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { staffApi } from '@/lib/api';
+import { dashboardApi, staffApi } from '@/lib/api';
 
 interface UseStaffQueryOptions {
   enabled?: boolean;
   staleTime?: number;
+}
+
+interface UseTeamsOptions extends UseStaffQueryOptions {
+  mode?: 'all' | 'mine';
 }
 
 export function useStaffUsers(
@@ -49,10 +53,18 @@ export function useResetPassword() {
   });
 }
 
-export function useTeams(options?: UseStaffQueryOptions) {
+export function useTeams(options?: UseTeamsOptions) {
+  const mode = options?.mode ?? 'all';
+
   return useQuery({
-    queryKey: ['staff', 'teams'],
+    queryKey: ['staff', 'teams', mode],
     queryFn: async () => {
+      if (mode === 'mine') {
+        const res = await dashboardApi.getPadal();
+        const data = res.data.data || res.data;
+        return data?.teamMembers || [];
+      }
+
       const res = await staffApi.getTeams();
       return res.data.data || [];
     },

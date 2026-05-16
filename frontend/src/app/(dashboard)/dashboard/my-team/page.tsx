@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { UsersRound, Phone, Info } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { dashboardApi } from "@/lib/api";
+import { useTeams } from "@/hooks/useStaff";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,34 +22,23 @@ interface TeamMember {
 export default function MyTeamPage() {
   const { user, isLoading: authLoading } = useAuth();
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: teamMembers = [],
+    isLoading,
+    isError,
+    error,
+  } = useTeams({
+    mode: "mine",
+    enabled: !authLoading && !!user,
+    staleTime: 30_000,
+  });
 
-  // ─── Fetch Data ─────────────────────────────────────────────────────────────
-
-  const fetchTeamData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await dashboardApi.getPadal();
-      const data = response.data.data || response.data;
-      setTeamMembers(data.teamMembers || []);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat data tim";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchTeamData();
-    }
-  }, [authLoading, user, fetchTeamData]);
+  const errorMessage = isError
+    ? ((error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message ||
+      (error as Error)?.message ||
+      "Gagal memuat data tim")
+    : null;
 
   // ─── Loading State ──────────────────────────────────────────────────────────
 
@@ -69,14 +58,14 @@ export default function MyTeamPage() {
 
   // ─── Error State ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tim Saya</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">{errorMessage}</p>
         </div>
       </div>
     );
@@ -130,7 +119,7 @@ export default function MyTeamPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {teamMembers.map((member) => (
+            {(teamMembers as TeamMember[]).map((member) => (
               <div
                 key={member.id}
                 className="flex items-center justify-between rounded-md border p-3"

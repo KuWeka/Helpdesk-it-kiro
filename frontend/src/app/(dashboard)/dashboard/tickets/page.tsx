@@ -13,6 +13,7 @@ import { Ticket, Eye, ChevronLeft, ChevronRight, XCircle, UserPlus, CheckCircle2
 import { useAuth } from "@/providers/AuthProvider";
 import { formatDate } from "@/lib/formatters";
 import { useCompleteTicket, useTickets } from "@/hooks/useTickets";
+import { useDebounce } from "@/hooks/useDebounce";
 import { StatusBadge } from "@/components/tickets/StatusBadge";
 import { CancelTicketModal } from "@/components/tickets/CancelTicketModal";
 import { QuickAssignModal } from "@/components/dashboard/QuickAssignModal";
@@ -82,6 +83,7 @@ export default function TicketListPage() {
     searchParams.get("status") || "ALL"
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -124,8 +126,8 @@ export default function TicketListPage() {
       params.status = statusFilter;
     }
 
-    if (searchQuery.trim()) {
-      params.search = searchQuery.trim();
+    if (debouncedSearch.trim()) {
+      params.search = debouncedSearch.trim();
     }
 
     if (unratedFilter) {
@@ -145,7 +147,7 @@ export default function TicketListPage() {
     endDate,
     pagination.pageIndex,
     pagination.pageSize,
-    searchQuery,
+    debouncedSearch,
     startDate,
     statusFilter,
     unratedFilter,

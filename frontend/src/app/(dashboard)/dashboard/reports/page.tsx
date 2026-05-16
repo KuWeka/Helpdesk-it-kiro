@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   FileText,
   FileSpreadsheet,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { reportApi } from "@/lib/api";
+import { useMonthlyReport } from "@/hooks/useReports";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
@@ -157,41 +158,34 @@ export default function ReportsPage() {
   const now = new Date();
   const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
   const [year, setYear] = useState<string>(String(now.getFullYear()));
-  const [data, setData] = useState<ReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const yearOptions = getYearOptions();
 
-  const fetchReport = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await reportApi.getMonthly({
-        month: Number(month),
-        year: Number(year),
-      });
-      setData(response.data.data);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Gagal memuat data laporan";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [month, year]);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useMonthlyReport(Number(month), Number(year), {
+    enabled: !authLoading && !!user,
+  });
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchReport();
-    }
-  }, [fetchReport, authLoading, user]);
+  const reportData = data as ReportData | undefined;
+
+  const errorMessage = actionError || (isError
+    ? ((error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message ||
+      (error as Error)?.message ||
+      "Gagal memuat data laporan")
+    : null);
 
   const handleExportPDF = async () => {
     try {
       setIsExportingPDF(true);
+      setActionError(null);
       const response = await reportApi.exportPDF({
         month: Number(month),
         year: Number(year),
@@ -206,7 +200,7 @@ export default function ReportsPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      setError("Gagal mengunduh file PDF");
+      setActionError("Gagal mengunduh file PDF");
     } finally {
       setIsExportingPDF(false);
     }
@@ -215,6 +209,7 @@ export default function ReportsPage() {
   const handleExportExcel = async () => {
     try {
       setIsExportingExcel(true);
+      setActionError(null);
       const response = await reportApi.exportExcel({
         month: Number(month),
         year: Number(year),
@@ -231,7 +226,7 @@ export default function ReportsPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      setError("Gagal mengunduh file Excel");
+      setActionError("Gagal mengunduh file Excel");
     } finally {
       setIsExportingExcel(false);
     }
@@ -309,7 +304,7 @@ export default function ReportsPage() {
             size="sm"
             className="min-h-[44px] lg:min-h-0"
             onClick={handleExportPDF}
-            disabled={isExportingPDF || isLoading || !data?.tickets.length}
+            disabled={isExportingPDF || isLoading || !reportData?.tickets.length}
           >
             {isExportingPDF ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -323,7 +318,7 @@ export default function ReportsPage() {
             size="sm"
             className="min-h-[44px] lg:min-h-0"
             onClick={handleExportExcel}
-            disabled={isExportingExcel || isLoading || !data?.tickets.length}
+            disabled={isExportingExcel || isLoading || !reportData?.tickets.length}
           >
             {isExportingExcel ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -344,52 +339,52 @@ export default function ReportsPage() {
       )}
 
       {/* Error State */}
-      {error && !isLoading && (
+      {errorMessage && !isLoading && (
         <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">{errorMessage}</p>
         </div>
       )}
 
       {/* Data Content */}
-      {!isLoading && !error && data && (
+      {!isLoading && !errorMessage && reportData && (
         <>
           {/* Summary Section */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <StatCard
               title="Total Tiket"
-              value={data.summary.total}
+              value={reportData.summary.total}
               icon={Ticket}
               variant="default"
             />
             <StatCard
               title="Pending"
-              value={data.summary.pending}
+              value={reportData.summary.pending}
               icon={Clock}
               variant="warning"
             />
             <StatCard
               title="Proses"
-              value={data.summary.proses}
+              value={reportData.summary.proses}
               icon={Loader2}
               variant="info"
             />
             <StatCard
               title="Selesai"
-              value={data.summary.selesai}
+              value={reportData.summary.selesai}
               icon={CheckCircle2}
               variant="success"
             />
             <StatCard
               title="Dibatalkan"
-              value={data.summary.dibatalkan}
+              value={reportData.summary.dibatalkan}
               icon={XCircle}
               variant="danger"
             />
             <StatCard
               title="Rata-rata Rating"
               value={
-                data.summary.averageRating !== null
-                  ? data.summary.averageRating.toFixed(1)
+                reportData.summary.averageRating !== null
+                  ? reportData.summary.averageRating.toFixed(1)
                   : "-"
               }
               icon={Star}
@@ -398,7 +393,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Data Table or Empty State */}
-          {data.tickets.length === 0 ? (
+          {reportData.tickets.length === 0 ? (
             <EmptyState
               icon={Calendar}
               title="Tidak Ada Data"
@@ -434,7 +429,7 @@ export default function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.tickets.map((ticket) => (
+                      {reportData.tickets.map((ticket) => (
                         <TableRow key={ticket.nomorTiket}>
                           <TableCell className="font-mono text-sm whitespace-nowrap">
                             {ticket.nomorTiket}

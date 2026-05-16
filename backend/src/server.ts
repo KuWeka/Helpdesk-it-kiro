@@ -36,4 +36,24 @@ server.listen(PORT, () => {
   logger.info(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
 });
 
+// Process-level error handlers for safer production operation.
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+  logger.error('[Server] Unhandled Promise Rejection:', reason);
+  logger.error('[Server] Promise:', String(promise));
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('[Server] Uncaught Exception:', error.message);
+  logger.error('[Server] Stack:', error.stack);
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  logger.info('[Server] SIGTERM received - shutting down gracefully');
+  server.close(() => {
+    logger.info('[Server] HTTP server closed');
+    process.exit(0);
+  });
+});
+
 export default server;

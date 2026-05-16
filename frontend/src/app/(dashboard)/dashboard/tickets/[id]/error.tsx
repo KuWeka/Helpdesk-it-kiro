@@ -12,7 +12,9 @@ export default function TicketDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Ticket detail error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Ticket Detail Error]", error);
+    }
   }, [error]);
 
   return (
