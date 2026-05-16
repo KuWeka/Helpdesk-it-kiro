@@ -1,121 +1,542 @@
-# PoldaHelp Kalsel
+<div align="center">
 
-Sistem IT Helpdesk ticketing untuk Polda Kalimantan Selatan dengan arsitektur monorepo (frontend, backend, shared).
+<img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"/>
+<img src="https://img.shields.io/badge/Express-4.18-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express"/>
+<img src="https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+<img src="https://img.shields.io/badge/Prisma-5.10-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma"/>
+<img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL"/>
+<img src="https://img.shields.io/badge/Socket.io-4.7-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io"/>
 
-## Overview
+<br/><br/>
 
-Aplikasi ini mendukung alur end-to-end pelaporan dan penanganan tiket gangguan TI untuk beberapa role:
+# 🚔 PoldaHelp Kalsel
 
-- SATKER: membuat tiket, memantau progres, memberi rating.
-- BIDTEKKOM: validasi, assignment, pembatalan/penolakan, manajemen user.
-- PADAL: penanggung jawab teknis, assignment teknisi, penyelesaian tiket.
-- TEKNISI: eksekusi penanganan di lapangan.
+### Sistem IT Helpdesk Ticketing — Polda Kalimantan Selatan
 
-## Tech Stack
+*Pelaporan gangguan TI yang terstruktur, transparan, dan real-time untuk seluruh satuan kerja.*
 
-- Frontend: Next.js 14, React 18, TypeScript, Tailwind CSS, TanStack Query, Socket.io Client.
-- Backend: Express, TypeScript, Prisma, MySQL, Socket.io, Zod, JWT.
-- Shared: package internal untuk constants dan types lintas workspace.
-- Deployment: Vercel (frontend) + Railway (backend).
+<br/>
 
-## Prerequisites
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com)
+[![Railway](https://img.shields.io/badge/Backend-Railway-0B0D0E?style=flat-square&logo=railway)](https://railway.app)
+[![Cloudinary](https://img.shields.io/badge/Storage-Cloudinary-3448C5?style=flat-square&logo=cloudinary)](https://cloudinary.com)
 
-- Node.js >= 18
-- npm >= 9
-- MySQL aktif secara lokal (untuk development)
-- Akun Cloudinary (upload file)
-- SMTP credentials (fitur forgot/reset password)
+</div>
 
-## Setup Lokal
+---
 
-1. Install dependency workspace:
+## 📋 Daftar Isi
+
+- [Tentang Project](#-tentang-project)
+- [Fitur Utama](#-fitur-utama)
+- [Tech Stack](#-tech-stack)
+- [Arsitektur & Struktur Project](#-arsitektur--struktur-project)
+- [Alur Tiket & Role](#-alur-tiket--role)
+- [Database Schema](#-database-schema)
+- [Setup Lokal](#-setup-lokal)
+- [Environment Variables](#-environment-variables)
+- [API Overview](#-api-overview)
+- [Testing](#-testing)
+- [Deployment](#-deployment)
+- [Keamanan](#-keamanan)
+
+---
+
+## 🧭 Tentang Project
+
+**PoldaHelp Kalsel** adalah sistem helpdesk IT internal berbasis web yang dibangun untuk **Kepolisian Daerah Kalimantan Selatan**. Sistem ini menggantikan pencatatan manual gangguan TI dengan alur digital yang terstruktur, mulai dari pelaporan tiket oleh satuan kerja hingga penyelesaian oleh teknisi lapangan.
+
+Dibangun sebagai **monorepo** dengan tiga workspace: `frontend`, `backend`, dan `shared` — sehingga tipe dan konstanta bisa digunakan bersama tanpa duplikasi.
+
+---
+
+## ✨ Fitur Utama
+
+| Fitur | Deskripsi |
+|-------|-----------|
+| 🎫 **Ticketing End-to-End** | Buat, assign, selesaikan, rating — semua dalam satu alur |
+| 🔔 **Notifikasi Real-time** | Berbasis Socket.io, setiap perubahan status tiket langsung terkirim |
+| 🔒 **RBAC 4 Role** | SATKER, BIDTEKKOM, PADAL, TEKNISI — tiap role punya akses berbeda |
+| ⭐ **Rating Gate** | SATKER wajib memberi rating sebelum bisa membuat tiket baru |
+| ❌ **Reject & Cancel Flow** | BIDTEKKOM bisa tolak tiket dengan alasan wajib untuk audit trail |
+| 📊 **Laporan Bulanan** | Export PDF dan Excel dengan ringkasan statistik per bulan |
+| 🔍 **Audit Log** | 14+ tipe event tercatat lengkap untuk setiap aksi penting |
+| 🌙 **Dark Mode** | Tema terang/gelap, persisten per user |
+| 📎 **Upload Attachment** | Foto dan file pendukung tiket via Cloudinary |
+| 🔑 **Reset Password** | Via email dengan token aman (hashed, expires 15 menit) |
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+```
+Next.js 14 (App Router)    — Framework React dengan SSR dan routing berbasis file
+React 18                   — UI library dengan concurrent features
+TypeScript 5.3             — Type safety end-to-end
+Tailwind CSS + shadcn/ui   — Styling dan komponen UI
+TanStack Query v5          — Server state management dan caching
+React Hook Form + Zod      — Form handling dan validasi schema
+Socket.io Client           — Real-time event dari backend
+Recharts                   — Visualisasi data dashboard
+Axios                      — HTTP client dengan interceptor
+```
+
+### Backend
+```
+Express 4.18               — HTTP server
+TypeScript 5.3             — Type safety
+Prisma 5.10 + MySQL 8      — ORM dan database
+Socket.io 4.7              — Real-time bidirectional events
+JWT + bcryptjs             — Autentikasi dan hashing password
+Zod                        — Validasi request body dan params
+Helmet                     — HTTP security headers
+express-rate-limit         — Rate limiting per endpoint
+Multer + Cloudinary        — Upload dan storage file
+Nodemailer                 — Email transaksional (password reset)
+PDFKit + ExcelJS           — Generate laporan PDF dan Excel
+```
+
+### Shared
+```
+@poldahelp/shared          — Internal package: tipe TypeScript dan konstanta
+                             digunakan bersama oleh frontend dan backend
+```
+
+### DevOps & Tools
+```
+Vercel                     — Deploy frontend (Next.js)
+Railway                    — Deploy backend + MySQL database
+Cloudinary                 — CDN dan storage file
+UptimeRobot                — Health check & uptime monitoring
+```
+
+---
+
+## 🏗 Arsitektur & Struktur Project
+
+```
+poldahelp-kalsel/                   ← Root monorepo (npm workspaces)
+│
+├── frontend/                       ← Next.js 14 App
+│   └── src/
+│       ├── app/
+│       │   ├── (auth)/             ← Route group: login, register, reset password
+│       │   └── (dashboard)/        ← Route group: semua halaman setelah login
+│       │       └── dashboard/
+│       │           ├── error.tsx           ← Global error boundary dashboard
+│       │           ├── page.tsx            ← Dashboard utama (berbeda per role)
+│       │           ├── tickets/            ← Daftar tiket + detail [id]
+│       │           ├── create-ticket/      ← Form buat tiket baru
+│       │           ├── staff/              ← Manajemen user (BIDTEKKOM)
+│       │           ├── teams/              ← Manajemen tim (PADAL)
+│       │           ├── my-team/            ← Anggota tim saya (PADAL)
+│       │           ├── reports/            ← Laporan bulanan (BIDTEKKOM/PADAL)
+│       │           ├── audit-log/          ← Log aktivitas (BIDTEKKOM)
+│       │           ├── notifications/      ← Notifikasi user
+│       │           └── settings/           ← Profil & preferensi
+│       │
+│       ├── components/
+│       │   ├── ui/                 ← shadcn/ui base components
+│       │   ├── layout/             ← Header, Sidebar, MobileDrawer
+│       │   ├── dashboard/          ← Komponen dashboard per role
+│       │   ├── tickets/            ← Modal dan komponen tiket
+│       │   └── shared/             ← EmptyState, LoadingSkeleton, ConfirmModal
+│       │
+│       ├── hooks/                  ← Custom React Query hooks
+│       │   ├── useTickets.ts       ← Query & mutation tiket
+│       │   ├── useStaff.ts         ← Query staff & manajemen user
+│       │   ├── useDashboard.ts     ← Query statistik dashboard
+│       │   ├── useReports.ts       ← Query laporan bulanan
+│       │   ├── useNotifications.ts ← Query & mutation notifikasi
+│       │   ├── useAudit.ts         ← Query audit log
+│       │   ├── useDebounce.ts      ← Utility hook debounce
+│       │   └── index.ts            ← Barrel export semua hooks
+│       │
+│       ├── providers/              ← Context providers
+│       │   ├── AuthProvider.tsx    ← State user & token
+│       │   ├── SocketProvider.tsx  ← Socket.io connection & events
+│       │   ├── QueryProvider.tsx   ← TanStack Query client
+│       │   └── ThemeProvider.tsx   ← Dark/light mode
+│       │
+│       ├── lib/
+│       │   ├── api.ts              ← Axios instance + semua API calls
+│       │   ├── formatters.ts       ← formatDate, formatFileSize, dll
+│       │   └── status-config.ts    ← Konfigurasi warna & label status tiket
+│       │
+│       ├── schemas/                ← Zod schemas untuk form validation
+│       └── middleware.ts           ← Next.js middleware (auth guard)
+│
+├── backend/                        ← Express API Server
+│   └── src/
+│       ├── controllers/            ← Handler request, delegasi ke service
+│       ├── services/               ← Business logic utama
+│       │   ├── ticketService.ts    ← CRUD + lifecycle tiket
+│       │   ├── authService.ts      ← Register, login, password reset
+│       │   ├── staffService.ts     ← Manajemen user & soft delete
+│       │   ├── reportService.ts    ← Generate PDF dan Excel
+│       │   ├── notificationService.ts ← Buat & kirim notifikasi
+│       │   └── auditService.ts     ← Catat audit log
+│       │
+│       ├── middleware/
+│       │   ├── authenticate.ts     ← Verifikasi JWT + cek soft-delete
+│       │   ├── authorize.ts        ← Role-based access control
+│       │   ├── validate.ts         ← Zod schema validation
+│       │   ├── rateLimit.ts        ← Rate limiting per endpoint
+│       │   └── upload.ts           ← Multer + Cloudinary storage
+│       │
+│       ├── lib/
+│       │   ├── prisma.ts           ← Singleton PrismaClient
+│       │   ├── socket.ts           ← Singleton Socket.io instance
+│       │   └── authCache.ts        ← In-memory cache autentikasi (TTL 60s)
+│       │
+│       ├── routes/                 ← Express router per domain
+│       ├── validators/             ← Zod schemas untuk request validation
+│       ├── utils/
+│       │   ├── AppError.ts         ← Custom error class
+│       │   ├── logger.ts           ← Winston logger
+│       │   └── ticketNumber.ts     ← Generate nomor tiket atomic
+│       │
+│       ├── prisma/
+│       │   ├── schema.prisma       ← Database schema
+│       │   ├── seed.ts             ← Data awal (admin, settings)
+│       │   └── migrations/         ← Riwayat migrasi database
+│       │
+│       └── __tests__/
+│           ├── properties/         ← Property-based tests (fast-check)
+│           └── *.test.ts           ← Unit & integration tests
+│
+└── shared/                         ← Internal package bersama
+    ├── types/
+    │   ├── index.ts                ← Role, TicketStatus, enums
+    │   └── api.ts                  ← PaginatedResult, ApiResponse
+    └── constants/
+        └── index.ts                ← Konstanta bersama
+```
+
+---
+
+## 🔄 Alur Tiket & Role
+
+```
+SATKER                BIDTEKKOM              PADAL              TEKNISI
+  │                       │                    │                   │
+  │── Buat Tiket ─────────▶│                    │                   │
+  │                       │── Validasi          │                   │
+  │                       │── Assign ke PADAL ──▶│                   │
+  │                       │                    │── Assign Teknisi ──▶│
+  │                       │                    │                   │── Kerjakan
+  │                       │                    │◀── Selesaikan ─────│
+  │◀── Notifikasi ─────────│◀───────────────────│                   │
+  │                       │                    │                   │
+  │── Beri Rating ─────────────────────────────────────────────────▶│
+  │   (wajib sebelum                                                │
+  │    buat tiket baru)                                             │
+```
+
+### Hak Akses per Role
+
+| Aksi | SATKER | BIDTEKKOM | PADAL | TEKNISI |
+|------|:------:|:---------:|:-----:|:-------:|
+| Buat tiket | ✅ | — | — | — |
+| Lihat tiket sendiri | ✅ | ✅ (semua) | ✅ (timnya) | ✅ (assigned) |
+| Validasi & assign ke PADAL | — | ✅ | — | — |
+| Tolak tiket + alasan | — | ✅ | — | — |
+| Assign teknisi | — | — | ✅ | — |
+| Selesaikan tiket | — | — | ✅ | ✅ |
+| Beri rating | ✅ | — | — | — |
+| Manajemen staff | — | ✅ | — | — |
+| Lihat audit log | — | ✅ | — | — |
+| Export laporan | — | ✅ | ✅ | — |
+| System settings | — | ✅ | — | — |
+
+### Status Tiket
+
+```
+         ┌─────────────────────────────────────┐
+         │                                     │
+  [BARU] │                                     ▼
+PENDING ──┤── BIDTEKKOM assign ──▶ PROSES ──▶ SELESAI
+         │
+         ├── BIDTEKKOM tolak ──▶ DITOLAK
+         │
+         └── SATKER/BIDTEKKOM batal ──▶ DIBATALKAN
+```
+
+---
+
+## 🗄 Database Schema
+
+```
+User ──────────────────────────────────────────────────────────────
+  id, nama, email, password, role, nip, nomorHp, divisi
+  foto, alamat, deletedAt (soft delete)
+
+Ticket ────────────────────────────────────────────────────────────
+  nomorTiket (TKT-YYYY-00001, atomic via TicketSequence)
+  judul, deskripsi, kategori, lokasi, status
+  creatorId (SATKER) → padalId (PADAL) → teknisiId (TEKNISI)
+  attachments: Attachment[]
+  rating: Rating (1 per tiket)
+
+AuditLog ──────────────────────────────────────────────────────────
+  eventType (14+ jenis: LOGIN, TICKET_CREATED, TICKET_ASSIGNED, ...)
+  actorId, ticketId, metadata (JSON), createdAt
+
+Notification ──────────────────────────────────────────────────────
+  userId, type, message, isRead, createdAt
+
+SystemSettings ────────────────────────────────────────────────────
+  appName, logoUrl (singleton row)
+```
+
+---
+
+## 🚀 Setup Lokal
+
+### Prasyarat
+
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0
+- **MySQL** 8.0 (aktif secara lokal)
+- Akun **Cloudinary** (untuk upload file)
+- Kredensial **SMTP** (untuk fitur reset password)
+
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/KuWeka/poldahelp-kalsel.git
+cd poldahelp-kalsel
+
+# Install semua dependencies (frontend + backend + shared sekaligus)
 npm install
 ```
 
-2. Siapkan environment:
-
-- Salin `backend/.env.example` menjadi `backend/.env`
-- Salin `frontend/.env.example` menjadi `frontend/.env.local`
-
-3. Jalankan migrasi Prisma di backend:
+### 2. Konfigurasi Environment
 
 ```bash
-npm run prisma:migrate --workspace=backend -- --schema=src/prisma/schema.prisma
+# Backend
+cp backend/.env.example backend/.env
+# Edit backend/.env — isi DATABASE_URL, JWT_SECRET, Cloudinary, SMTP
+
+# Frontend
+cp frontend/.env.example frontend/.env.local
+# Edit frontend/.env.local — isi NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SOCKET_URL
 ```
 
-4. Opsional isi data awal:
+### 3. Setup Database
 
 ```bash
+# Generate Prisma client
+npm run prisma:generate --workspace=backend
+
+# Jalankan migrasi
+npm run prisma:migrate --workspace=backend
+
+# Seed data awal (akun admin default)
 npm run prisma:seed --workspace=backend
 ```
 
-5. Jalankan backend dan frontend di terminal terpisah:
+### 4. Jalankan Development Server
 
 ```bash
+# Terminal 1 — Backend (port 5000)
 npm run dev:backend
+
+# Terminal 2 — Frontend (port 3000)
 npm run dev:frontend
 ```
 
-## Environment Variables
+Buka [http://localhost:3000](http://localhost:3000) di browser.
+
+---
+
+## 🔐 Environment Variables
 
 ### Backend (`backend/.env`)
 
-- `PORT`: port API backend.
-- `NODE_ENV`: mode runtime (`development`/`production`).
-- `DATABASE_URL`: koneksi MySQL untuk Prisma.
-- `JWT_SECRET`: secret token autentikasi.
-- `JWT_EXPIRES_IN`: TTL JWT.
-- `CORS_ORIGIN`: origin frontend yang diizinkan.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: konfigurasi email reset password.
-- `PASSWORD_RESET_URL`: URL tujuan reset password frontend.
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: upload aset.
-- `UPLOAD_DIR`, `MAX_FILE_SIZE`: fallback upload lokal/limit ukuran file.
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Database
+DATABASE_URL=mysql://root:password@localhost:3306/poldahelp_kalsel
+
+# JWT
+JWT_SECRET=ganti-dengan-string-random-panjang-yang-aman
+JWT_EXPIRES_IN=24h
+
+# CORS (ganti dengan URL Vercel di production)
+CORS_ORIGIN=http://localhost:3000
+
+# Email (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=noreply@poldahelp-kalsel.id
+PASSWORD_RESET_URL=http://localhost:3000/reset-password
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
 
 ### Frontend (`frontend/.env.local`)
 
-- `NEXT_PUBLIC_API_URL`: base URL API backend (`.../api`).
-- `NEXT_PUBLIC_SOCKET_URL`: base URL Socket.io backend.
-- `NEXT_PUBLIC_APP_NAME`: nama aplikasi.
-- `NEXT_PUBLIC_DEFAULT_LOCALE`: locale default.
-
-## Deployment
-
-### Frontend (Vercel)
-
-- Import repository ke Vercel.
-- Set environment variables `NEXT_PUBLIC_*`.
-- Deploy branch utama.
-
-### Backend (Railway)
-
-- Deploy folder backend sebagai service.
-- Pastikan env backend terisi lengkap.
-- `railway.json` sudah menyetel:
-  - start command migrasi + start server
-  - health check path `'/api/health'`
-
-## Struktur Folder
-
-```text
-frontend/   -> UI Next.js
-backend/    -> API Express + Prisma + Socket.io
-shared/     -> shared types/constants lintas package
-documents/  -> analisis, requirements, laporan sprint
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+NEXT_PUBLIC_APP_NAME=PoldaHelp Kalsel
 ```
 
-## Development Workflow
+---
 
-1. Buat branch fitur dari branch utama.
-2. Kerjakan task per sprint sesuai `tasks.md`.
-3. Jalankan validasi lokal sebelum commit:
+## 📡 API Overview
+
+Semua endpoint diawali `/api` dan memerlukan header `Authorization: Bearer <token>` kecuali auth routes.
+
+| Domain | Endpoint | Method | Akses |
+|--------|----------|--------|-------|
+| **Auth** | `/api/auth/register` | POST | Public |
+| | `/api/auth/login` | POST | Public |
+| | `/api/auth/forgot-password` | POST | Public |
+| | `/api/auth/reset-password` | POST | Public |
+| **Tiket** | `/api/tickets` | GET, POST | Authenticated |
+| | `/api/tickets/:id` | GET | Authenticated |
+| | `/api/tickets/:id/assign` | PATCH | BIDTEKKOM |
+| | `/api/tickets/:id/reject` | PATCH | BIDTEKKOM |
+| | `/api/tickets/:id/assign-teknisi` | PATCH | PADAL |
+| | `/api/tickets/:id/complete` | PATCH | PADAL/TEKNISI |
+| | `/api/tickets/:id/cancel` | PATCH | SATKER/BIDTEKKOM |
+| **Staff** | `/api/staff` | GET, POST | BIDTEKKOM |
+| | `/api/staff/:id/role` | PATCH | BIDTEKKOM |
+| | `/api/staff/:id` | DELETE | BIDTEKKOM |
+| **Laporan** | `/api/reports/monthly` | GET | BIDTEKKOM/PADAL |
+| | `/api/reports/export/pdf` | GET | BIDTEKKOM/PADAL |
+| | `/api/reports/export/excel` | GET | BIDTEKKOM/PADAL |
+| **Lainnya** | `/api/dashboard` | GET | Authenticated |
+| | `/api/notifications` | GET, PATCH | Authenticated |
+| | `/api/audit` | GET | BIDTEKKOM |
+| | `/api/profile` | GET, PATCH | Authenticated |
+| | `/api/settings` | GET, PATCH | BIDTEKKOM |
+
+### Real-time Events (Socket.io)
+
+Setiap user bergabung ke room `user_{userId}` setelah login. Event yang dikirim server ke client:
+
+```
+ticket:new            → Ada tiket baru masuk (BIDTEKKOM)
+ticket:assigned       → Tiket di-assign ke PADAL
+ticket:teknisi        → Tiket di-assign ke Teknisi
+ticket:completed      → Tiket selesai (SATKER & BIDTEKKOM)
+ticket:cancelled      → Tiket dibatalkan
+ticket:rejected       → Tiket ditolak (SATKER)
+notification:new      → Notifikasi baru (update badge counter)
+```
+
+---
+
+## 🧪 Testing
+
+Project menggunakan **Jest** dengan dua pendekatan testing:
+
+### Property-Based Tests (fast-check)
+
+File di `backend/src/__tests__/properties/` — menguji properti invariant yang harus selalu benar untuk semua input yang mungkin:
 
 ```bash
-npm run typecheck --workspace=backend
-npm run test --workspace=backend
-npm run build --workspace=frontend
+npm run test:property --workspace=backend
 ```
 
-4. Buka Pull Request dengan ringkasan perubahan + bukti test.
-5. Merge setelah review lulus.
+Properti yang diuji meliputi:
+- JWT token encode/decode consistency
+- Password hashing one-way (tidak bisa di-reverse)
+- Rating hanya bisa diberikan untuk tiket SELESAI
+- Role-based data scoping (SATKER hanya lihat tiket sendiri)
+- Ticket status transitions yang valid
+- Nomor tiket unik per tahun
+
+### Unit & Integration Tests
+
+```bash
+npm run test --workspace=backend
+```
+
+### Typecheck Seluruh Workspace
+
+```bash
+npm run typecheck
+```
+
+---
+
+## 🌐 Deployment
+
+### Frontend → Vercel
+
+1. Push ke GitHub, connect repo ke Vercel
+2. Set **Environment Variables** di Vercel dashboard:
+   ```
+   NEXT_PUBLIC_API_URL     = https://your-backend.railway.app/api
+   NEXT_PUBLIC_SOCKET_URL  = https://your-backend.railway.app
+   NEXT_PUBLIC_APP_NAME    = PoldaHelp Kalsel
+   ```
+3. Deploy otomatis setiap push ke `main`
+
+### Backend → Railway
+
+1. Connect repo ke Railway, pilih folder `backend` sebagai root
+2. Railway mendeteksi `railway.json` secara otomatis:
+   ```json
+   {
+     "deploy": {
+       "startCommand": "npx prisma migrate deploy ... && npm run start"
+     }
+   }
+   ```
+3. Set **Environment Variables** di Railway dashboard
+4. Tambahkan **MySQL plugin** di Railway, copy `DATABASE_URL` ke env backend
+5. Set `CORS_ORIGIN` ke URL Vercel yang exact (tanpa trailing slash)
+
+### Health Check & Uptime
+
+Backend expose `/api/health` yang return `{ status: "ok" }`. Gunakan **UptimeRobot** untuk ping setiap 5 menit agar Railway tidak sleep.
+
+---
+
+## 🔒 Keamanan
+
+| Aspek | Implementasi |
+|-------|-------------|
+| **Autentikasi** | JWT dengan expiry 24h, verifikasi soft-delete per request |
+| **Auth Cache** | In-memory cache TTL 60s untuk mengurangi DB query autentikasi |
+| **Password** | bcrypt salt rounds 10 |
+| **Password Reset** | Token `crypto.randomBytes(32)`, disimpan sebagai SHA-256 hash, expires 15 menit |
+| **RBAC** | Middleware `authorize(Role.X)` per route, tidak ada bypass |
+| **Optimistic Lock** | `updateMany` dengan kondisi status di WHERE, cegah race condition assign bersamaan |
+| **Rate Limiting** | Auth: 5 req/15min · Ticket create: 20 req/jam · Reset: 3 req/15min |
+| **HTTP Headers** | Helmet.js: X-Content-Type-Options, X-Frame-Options, CSP, HSTS |
+| **Input Validation** | Zod schema di setiap endpoint (body, params, query) termasuk UUID validation |
+| **File Upload** | Whitelist MIME type, max 5MB per file, langsung ke Cloudinary |
+| **Soft Delete** | User yang dihapus tidak bisa login meskipun token masih valid |
+| **Audit Trail** | 14+ event type dicatat dengan aktor, timestamp, dan metadata JSON |
+| **Error Handling** | `unhandledRejection` & `uncaughtException` handler, graceful SIGTERM shutdown |
+
+---
+
+## 📁 Dokumen Tambahan
+
+- [`backend/src/prisma/README.md`](backend/src/prisma/README.md) — Dokumentasi schema database dan panduan migrasi
+- [`tasks.md`](tasks.md) — Riwayat task development sprint 1 (27 tasks ✅)
+- [`tasks_v2.md`](tasks_v2.md) — Riwayat task development sprint 2 (7 tasks ✅)
+
+---
+
+<div align="center">
+
+Dibangun untuk **Polda Kalimantan Selatan** &nbsp;·&nbsp; TypeScript Monorepo &nbsp;·&nbsp; Vercel + Railway
+
+</div>
