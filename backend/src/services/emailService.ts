@@ -27,11 +27,11 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1a56db;">Reset Password - PoldaHelp Kalsel</h2>
+      <h2 style="color: #1a56db;">Reset Password - SIGAP</h2>
       <p>Anda menerima email ini karena ada permintaan untuk mereset password akun Anda.</p>
       <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetUrl}" 
+        <a href="${resetUrl}"
            style="background-color: #1a56db; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
           Reset Password
         </a>
@@ -50,7 +50,7 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: 'Reset Password - PoldaHelp Kalsel',
+      subject: 'Reset Password - SIGAP',
       html: htmlBody,
     });
     logger.info(`Password reset email sent to ${email}`);

@@ -1,4 +1,4 @@
-// Shared enums for PoldaHelp Kalsel IT Helpdesk
+// Shared enums for SIGAP
 
 export enum Role {
   SATKER = 'SATKER',

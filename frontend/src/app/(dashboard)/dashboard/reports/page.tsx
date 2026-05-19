@@ -251,7 +251,7 @@ export default function ReportsPage() {
         <p className="text-muted-foreground">
           {user.role === "PADAL"
             ? "Laporan tiket yang ditugaskan kepada Anda"
-            : "Laporan seluruh tiket helpdesk"}
+            : "Laporan seluruh tiket SIGAP"}
         </p>
       </div>
 

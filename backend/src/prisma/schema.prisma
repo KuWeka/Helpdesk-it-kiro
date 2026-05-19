@@ -193,6 +193,6 @@ model AuditLog {
 
 model SystemSettings {
   id      String  @id @default(uuid())
-  appName String  @default("PoldaHelp Kalsel") @db.VarChar(100)
+  appName String  @default("SIGAP") @db.VarChar(100)
   appLogo String? @db.VarChar(500)
 }

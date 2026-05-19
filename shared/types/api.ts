@@ -1,4 +1,4 @@
-// Shared API interfaces for PoldaHelp Kalsel IT Helpdesk
+// Shared API interfaces for SIGAP
 
 export interface ApiError {
   statusCode: number;

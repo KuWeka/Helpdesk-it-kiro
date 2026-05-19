@@ -87,7 +87,7 @@ export default function SystemSettingsPage() {
       const response = await settingsApi.get();
       const data = response.data?.data || response.data;
 
-      const name = data?.appName || "PoldaHelp Kalsel";
+      const name = data?.appName || "SIGAP";
       form.reset({ appName: name });
       setCurrentAppName(name);
 

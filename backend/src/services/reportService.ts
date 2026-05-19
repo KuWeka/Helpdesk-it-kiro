@@ -309,7 +309,7 @@ export async function exportExcel(params: ReportParams): Promise<Buffer> {
   ];
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'PoldaHelp Kalsel';
+  workbook.creator = 'SIGAP';el';
   workbook.created = new Date();
 
   // ─── Data Sheet ──────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import { AppError } from '../utils/AppError';
  * Default system settings returned when no record exists in the database.
  */
 const DEFAULT_SETTINGS = {
-  appName: 'PoldaHelp Kalsel',
+  appName: 'SIGAP',
   appLogo: null as string | null,
 };
 

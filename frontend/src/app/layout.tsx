@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PoldaHelp Kalsel - IT Helpdesk Ticketing',
-  description: 'Sistem Helpdesk IT Internal Polda Kalimantan Selatan',
+  title: 'SIGAP - Sistem Informasi Gangguan dan Aduan Polri',
+  description: 'Sistem Informasi Gangguan dan Aduan Polri - Polisi Daerah Kalimantan Selatan',
 };
 
 export default function RootLayout({

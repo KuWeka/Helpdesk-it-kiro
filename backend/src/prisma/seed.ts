@@ -147,10 +147,10 @@ async function main() {
     update: {},
     create: {
       id: 'default-settings',
-      appName: 'PoldaHelp Kalsel',
+      appName: 'SIGAP',
     },
   });
-  console.log('  ✓ SystemSettings: PoldaHelp Kalsel');
+  console.log('  ✓ SystemSettings: SIGAP');
 
   // --- TicketSequence ---
   const currentYear = new Date().getFullYear();

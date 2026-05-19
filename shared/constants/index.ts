@@ -1,4 +1,4 @@
-// Shared constants for PoldaHelp Kalsel IT Helpdesk
+// Shared constants for SIGAP
 
 import { Role, TicketStatus, TicketCategory } from '../types';
 

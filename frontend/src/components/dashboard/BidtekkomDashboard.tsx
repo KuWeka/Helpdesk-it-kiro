@@ -201,7 +201,7 @@ export function BidtekkomDashboard() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Dashboard Bidtekkom</h1>
         <p className="text-sm text-muted-foreground">
-          Ringkasan aktivitas sistem helpdesk
+          Ringkasan aktivitas sistem SIGAP
         </p>
       </div>
 

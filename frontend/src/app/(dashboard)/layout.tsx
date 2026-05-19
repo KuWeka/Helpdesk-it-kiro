@@ -29,7 +29,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>({
-    appName: "PoldaHelp Kalsel",
+    appName: "SIGAP",
     appLogo: null,
   });
 
@@ -41,7 +41,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         const data = res.data?.data || res.data;
         if (data) {
           setSettings({
-            appName: data.appName || "PoldaHelp Kalsel",
+            appName: data.appName || "SIGAP",el",
             appLogo: data.appLogo || null,
           });
         }
